@@ -289,6 +289,49 @@ export function generateResponse(question, context) {
     };
   }
 
+  // Scope boundary guard: Prevent cross-jurisdiction data exposure
+  const user = context.user || (typeof window !== 'undefined' ? (() => {
+    try {
+      const saved = localStorage.getItem('sentinel_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  })() : null);
+
+  if (user && user.role && user.role !== 'MINISTRY') {
+    const qLower = (question || '').toLowerCase();
+    if ((user.role === 'DISTRICT_AUTHORITY' || user.role === 'MP') && (qLower.includes('which state') || qLower.includes('all states') || qLower.includes('national'))) {
+      const scopeLabel = user.role === 'DISTRICT_AUTHORITY'
+        ? `District Scope (${user.district || 'Bengaluru Urban'})`
+        : `Constituency Scope (${user.constituency || 'Bengaluru Urban PC'})`;
+      return {
+        title: 'Jurisdiction Scope Boundary',
+        answer: `This inquiry is outside your authorized scope (${scopeLabel}). As an authorized official, you have jurisdictional access strictly to your assigned administrative unit.\n\nI cannot expose comparative data across other states or national statistics. Would you like an analysis of high-risk works, delay signals, or expenditure patterns within your authorized jurisdiction instead?`,
+        disclaimer: DISCLAIMER,
+        confidence: 'High',
+        source: 'MPLADS Sentinel RBAC Enforcement',
+        dataset: `${user.role} Scoped Dataset`,
+        unauthorized: true,
+      };
+    }
+
+    if (user.role === 'STATE_AUTHORITY' && user.state) {
+      const otherStates = ['uttar pradesh', 'maharashtra', 'bihar', 'rajasthan', 'tamil nadu', 'gujarat', 'kerala', 'west bengal']
+        .filter(s => s !== user.state.toLowerCase());
+      const mentionsOtherState = otherStates.find(s => qLower.includes(s));
+      if (mentionsOtherState) {
+        return {
+          title: 'Jurisdiction Scope Boundary',
+          answer: `Analysis of other states (${mentionsOtherState.toUpperCase()}) is outside your authorized scope (State Scope · ${user.state}).\n\nUnder government access policies, your analytical access is restricted to ${user.state}. I can provide detailed district risk rankings, agency concentrations, or critical works within ${user.state}.`,
+          disclaimer: DISCLAIMER,
+          confidence: 'High',
+          source: 'MPLADS Sentinel RBAC Enforcement',
+          dataset: `${user.state} State Scoped Dataset`,
+          unauthorized: true,
+        };
+      }
+    }
+  }
+
   // Handle unsupported questions
   if (context.unsupported || intent.type === INTENT_TYPES.UNSUPPORTED) {
     return {

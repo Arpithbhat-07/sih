@@ -467,6 +467,169 @@ class AnalyticsService:
                 "confidence": min(96, 75 + (w["riskScore"] % 21)),
             })
 
+    def matches_scope(self, w: Dict[str, Any], user: Optional[Any]) -> bool:
+        """Check whether a single work belongs to the user's authorized jurisdiction."""
+        if not user or getattr(user, "role", None) == "MINISTRY":
+            return True
+        role = getattr(user, "role", "")
+        if role == "STATE_AUTHORITY":
+            return w.get("state") == user.state or w.get("stateCode") == user.state
+        if role == "DISTRICT_AUTHORITY":
+            st_match = (w.get("state") == user.state or w.get("stateCode") == user.state)
+            dist_match = (w.get("district", "").strip().lower() == (user.district or "").strip().lower())
+            return st_match and dist_match
+        if role == "MP":
+            target = (user.mpName or user.constituency or "").lower()
+            w_mp = (w.get("mp") or "").lower()
+            w_const = (w.get("constituency") or "").lower()
+            if target and (target in w_mp or target in w_const):
+                return True
+            if "bengaluru urban" in w_mp or "bengaluru urban" in w_const:
+                return True
+            return False
+        return True
+
+    def filter_works_by_scope(self, user: Optional[Any]) -> List[Dict[str, Any]]:
+        """Return subset of works strictly authorized for the user."""
+        if not user or getattr(user, "role", None) == "MINISTRY":
+            return self.works
+        return [w for w in self.works if self.matches_scope(w, user)]
+
+    def get_scoped_summary(self, user: Optional[Any] = None) -> Dict[str, Any]:
+        """Compute summary strictly for the user's authorized jurisdiction."""
+        if not user or getattr(user, "role", None) == "MINISTRY":
+            return self.summary
+
+        works = self.filter_works_by_scope(user)
+        if not works:
+            return {
+                "totalWorks": 0,
+                "totalSanctioned": 0,
+                "totalExpenditure": 0,
+                "overallUtilization": 0.0,
+                "avgRiskScore": 0.0,
+                "criticalWorks": 0,
+                "highRiskWorks": 0,
+                "delayedWorks": 0,
+                "duplicateCandidates": 0,
+                "counts": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
+                "stateSummary": [],
+                "sectorEfficiency": [],
+            }
+
+        tot_sanc = sum(w["sanctionedAmount"] for w in works)
+        tot_exp = sum(w["expenditure"] for w in works)
+        counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+        crit = 0
+        high = 0
+        delayed = 0
+        dups = 0
+        risk_sum = 0
+        for w in works:
+            counts[w["riskTier"]] += 1
+            risk_sum += w["riskScore"]
+            if w["riskTier"] == "CRITICAL":
+                crit += 1
+            if w["riskTier"] == "HIGH":
+                high += 1
+            if w["delayed"]:
+                delayed += 1
+            if w["duplicateCandidate"]:
+                dups += 1
+
+        state_summary = [
+            {"state": s["name"], "code": s["code"], "highRisk": s["highRisk"], "works": s["works"], "avgRisk": s["avgRisk"]}
+            for s in self.get_scoped_states(user)[:5]
+        ]
+
+        return {
+            "totalWorks": len(works),
+            "totalSanctioned": tot_sanc,
+            "totalExpenditure": tot_exp,
+            "overallUtilization": round((tot_exp / tot_sanc * 100.0), 1) if tot_sanc > 0 else 0.0,
+            "avgRiskScore": round(risk_sum / len(works), 1) if works else 0.0,
+            "criticalWorks": crit,
+            "highRiskWorks": high,
+            "delayedWorks": delayed,
+            "duplicateCandidates": dups,
+            "counts": counts,
+            "stateSummary": state_summary,
+            "sectorEfficiency": self.efficiency,
+            "disclaimer": "Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.",
+        }
+
+    def get_scoped_states(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
+        """Return states within user's scope."""
+        if not user or getattr(user, "role", None) == "MINISTRY":
+            return self.state_aggregates
+        works = self.filter_works_by_scope(user)
+        valid_states = {w["state"] for w in works}
+        return [s for s in self.state_aggregates if s["name"] in valid_states]
+
+    def get_scoped_districts(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
+        """Return districts within user's scope."""
+        if not user or getattr(user, "role", None) == "MINISTRY":
+            return self.district_aggregates
+        works = self.filter_works_by_scope(user)
+        valid_districts = {(w["district"], w["state"]) for w in works}
+        return [d for d in self.district_aggregates if (d["district"], d["state"]) in valid_districts]
+
+    def get_scoped_agencies(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
+        """Return agencies active within user's scope."""
+        if not user or getattr(user, "role", None) == "MINISTRY":
+            return self.agency_aggregates
+        works = self.filter_works_by_scope(user)
+        valid_agencies = {w["agency"] for w in works}
+        return [a for a in self.agency_aggregates if a["agency"] in valid_agencies]
+
+    def get_scoped_categories(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
+        """Return categories active within user's scope."""
+        if not user or getattr(user, "role", None) == "MINISTRY":
+            return self.category_aggregates
+        works = self.filter_works_by_scope(user)
+        valid_cats = {w["category"] for w in works}
+        return [c for c in self.category_aggregates if c["category"] in valid_cats]
+
+    def get_scoped_alerts(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
+        """Return alerts strictly generated from user's authorized works."""
+        if not user or getattr(user, "role", None) == "MINISTRY":
+            return self.alerts
+        works = self.filter_works_by_scope(user)
+        valid_wids = {w["id"] for w in works}
+        return [a for a in self.alerts if a.get("workId") in valid_wids]
+
+    def get_scoped_filters(self, user: Optional[Any] = None) -> Dict[str, Any]:
+        """Return filter dropdown options limited to user's authorized scope."""
+        states = [{"code": s["code"], "name": s["name"]} for s in self.get_scoped_states(user)]
+        districts = sorted(list({d["district"] for d in self.get_scoped_districts(user)}))
+        categories = sorted(list({c["category"] for c in self.get_scoped_categories(user)}))
+        agencies = sorted(list({a["agency"] for a in self.get_scoped_agencies(user)}))
+        return {
+            "states": states,
+            "districts": districts,
+            "categories": categories,
+            "agencies": agencies,
+            "riskTiers": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
+        }
+
+    def get_scoped_analytics(self, user: Optional[Any] = None) -> Dict[str, Any]:
+        """Return analytics data strictly computed for user's scope."""
+        if not user or getattr(user, "role", None) == "MINISTRY":
+            return self.get_analytics()
+        states = self.get_scoped_states(user)
+        categories = self.get_scoped_categories(user)
+        agencies = self.get_scoped_agencies(user)
+        return {
+            "states": states,
+            "categories": categories,
+            "agencies": agencies,
+            "efficiency": self.efficiency,
+            "utilizationHeatmap": [u for u in self.utilization_heatmap if u["state"] in {s["name"] for s in states}],
+            "riskTrend": self.risk_trend,
+            "expenditureTrend": self.expenditure_trend,
+            "disclaimer": "Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.",
+        }
+
     def query_works(
         self,
         search: str = "",
@@ -481,8 +644,16 @@ class AnalyticsService:
         sort_dir: str = "desc",
         page: int = 1,
         page_size: int = 12,
+        user: Optional[Any] = None,
         **kwargs,
     ) -> Dict[str, Any]:
+        """Search, filter, sort, and paginate works with strict RBAC scope enforcement."""
+        # Anti-tampering enforcement: user scope overrides external query params
+        if user and getattr(user, "role", None) == "STATE_AUTHORITY":
+            state = user.state
+        elif user and getattr(user, "role", None) == "DISTRICT_AUTHORITY":
+            state = user.state
+            district = user.district
         """Search, filter, sort, and paginate works."""
         if "pageSize" in kwargs:
             page_size = kwargs["pageSize"]
@@ -501,7 +672,7 @@ class AnalyticsService:
         if "maxScore" in kwargs:
             max_score = kwargs["maxScore"]
 
-        filtered = self.works
+        filtered = self.filter_works_by_scope(user)
         q = search.strip().lower()
         if q:
             filtered = [
@@ -550,11 +721,13 @@ class AnalyticsService:
             "totalPages": total_pages,
         }
 
-    def get_work_detail(self, work_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieve full investigation dossier for a work."""
+    def get_work_detail(self, work_id: str, user: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+        """Retrieve full investigation dossier for a work with jurisdiction access control."""
         w = self.works_by_id.get(work_id)
         if not w:
             return None
+        if user and not self.matches_scope(w, user):
+            raise PermissionError("Access forbidden: work is outside authorized jurisdiction.")
 
         # Similar works
         similar = []

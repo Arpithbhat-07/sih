@@ -328,4 +328,40 @@ describe('Sentinel AI Intelligence Engine', () => {
       expect(res.disclaimer).toBe(DISCLAIMER);
     });
   });
+
+  // ================= 10. SCOPE-AWARE RBAC GUARDS =================
+  describe('Scope-Aware RBAC Guards', () => {
+    test('blocks district authority asking about national or other state rankings', () => {
+      const districtContext = {
+        intent: { type: INTENT_TYPES.STATE_ANALYSIS },
+        user: {
+          role: 'DISTRICT_AUTHORITY',
+          district: 'Bengaluru Urban',
+          state: 'Karnataka',
+        },
+      };
+
+      const res = generateResponse('Which states have the most high-risk works?', districtContext);
+      expect(res.title).toBe('Jurisdiction Scope Boundary');
+      expect(res.answer).toContain('outside your authorized scope (District Scope');
+      expect(res.unauthorized).toBe(true);
+      expect(res.disclaimer).toBe(DISCLAIMER);
+    });
+
+    test('blocks state authority asking about other states', () => {
+      const stateContext = {
+        intent: { type: INTENT_TYPES.STATE_ANALYSIS },
+        user: {
+          role: 'STATE_AUTHORITY',
+          state: 'Karnataka',
+        },
+      };
+
+      const res = generateResponse('Show me risk in Uttar Pradesh', stateContext);
+      expect(res.title).toBe('Jurisdiction Scope Boundary');
+      expect(res.answer).toContain('outside your authorized scope (State Scope · Karnataka)');
+      expect(res.unauthorized).toBe(true);
+      expect(res.disclaimer).toBe(DISCLAIMER);
+    });
+  });
 });

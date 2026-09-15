@@ -37,7 +37,10 @@ const FilterPill = ({ label, value, options, onChange }) => (
   </div>
 );
 
+import { useAuth } from '../context/AuthContext';
+
 export default function CommandCenter() {
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [trend, setTrend] = useState([]);
@@ -58,10 +61,29 @@ export default function CommandCenter() {
     });
   }, []);
 
-  if (!data) return <Loader label="Loading national overview…" />;
+  if (!data) return <Loader label="Loading jurisdictional overview…" />;
 
-  const donut = TIER_ORDER.map((k) => ({ name: RISK_TIERS[k].label, value: data.counts[k], color: RISK_TIERS[k].color, key: k }));
+  const donut = TIER_ORDER.map((k) => ({ name: RISK_TIERS[k].label, value: data.counts?.[k] || 0, color: RISK_TIERS[k].color, key: k }));
   const topStates = [...states].sort((a, b) => b.highRisk - a.highRisk).slice(0, 6);
+
+  // Role-tailored headline and descriptions
+  let heroTitle = 'From thousands of records to prioritized action.';
+  let heroSubtitle = 'Sentinel continuously analyzes project, financial and execution signals to identify where attention is needed most.';
+  let scopeBadgeText = 'National Scope · All India';
+
+  if (role === 'STATE_AUTHORITY') {
+    heroTitle = `State Command Center · ${user?.state || 'Karnataka'}`;
+    heroSubtitle = `Monitoring ${data.totalWorks} sanctioned public works across ${user?.state || 'Karnataka'}'s implementing agencies and districts.`;
+    scopeBadgeText = `${user?.state || 'Karnataka'} · State Jurisdiction`;
+  } else if (role === 'DISTRICT_AUTHORITY') {
+    heroTitle = `District Monitoring Center · ${user?.district || 'Bengaluru Urban'}`;
+    heroSubtitle = `Localized risk assessment for ${data.totalWorks} works within ${user?.district || 'Bengaluru Urban'} district jurisdiction.`;
+    scopeBadgeText = `${user?.district || 'Bengaluru Urban'} · District Scope`;
+  } else if (role === 'MP') {
+    heroTitle = `My MPLADS Works · ${user?.constituency || 'Bengaluru Urban PC'}`;
+    heroSubtitle = `Constituency dashboard tracking portfolio health, delay alerts, and fund utilization for ${data.totalWorks} recommended works.`;
+    scopeBadgeText = `${user?.constituency || 'Bengaluru Urban PC'} · My Projects`;
+  }
 
   return (
     <div className="space-y-6">
@@ -71,12 +93,12 @@ export default function CommandCenter() {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 relative">
           <div>
             <div className="inline-flex items-center gap-2 mb-3 px-2 py-0.5 rounded border border-hairline bg-[#0D0F12] text-[10px] text-[#A0A5B0]">
-              <span className="w-1.5 h-1.5 rounded-full bg-ai" /> Synthetic Demonstration Dataset
+              <span className="w-1.5 h-1.5 rounded-full bg-ai" /> {scopeBadgeText}
             </div>
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[#EDEDED]">From thousands of records to prioritized action.</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[#EDEDED]">{heroTitle}</h1>
             <p className="text-sm text-[#A0A5B0] mt-2 max-w-2xl">
-              Sentinel continuously analyzes project, financial and execution signals to identify where attention is needed most —
-              <span className="text-[#EDEDED]"> we don't replace investigation, we tell authorities where to look first.</span>
+              {heroSubtitle}
+              <span className="text-[#EDEDED]"> We don't replace investigation, we tell authorities where to look first.</span>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

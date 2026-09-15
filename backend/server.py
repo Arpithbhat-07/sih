@@ -3,7 +3,7 @@ MPLADS Sentinel - FastAPI Analytics Server
 Exposes high-performance REST APIs driven by the real analytical & ML engine.
 """
 
-from fastapi import FastAPI, APIRouter, Query, UploadFile, File, HTTPException
+from fastapi import FastAPI, APIRouter, Query, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import os
@@ -12,6 +12,15 @@ import pandas as pd
 from typing import Optional
 
 from backend.services.analytics import AnalyticsService
+from backend.auth import (
+    authenticate_user,
+    create_access_token,
+    get_current_user_optional,
+    get_current_user,
+    User,
+    LoginRequest,
+    LoginResponse,
+)
 
 # Locate default dataset
 ROOT_DIR = Path(__file__).parent
@@ -67,54 +76,80 @@ def health_check():
     }
 
 
+# ==================== AUTHENTICATION & RBAC ENDPOINTS ====================
+
+@api_router.post("/auth/login", response_model=LoginResponse)
+def login(req: LoginRequest):
+    """Authenticate with username and password, returning signed session token."""
+    user = authenticate_user(req.username, req.password)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username or password. Please verify your credentials.",
+        )
+    token = create_access_token({"sub": user.username, "role": user.role, "scope": user.scope})
+    return LoginResponse(token=token, user=user)
+
+
+@api_router.get("/auth/me", response_model=User)
+def get_me(user: User = Depends(get_current_user)):
+    """Retrieve current authenticated user context and authorized jurisdiction."""
+    return user
+
+
+@api_router.post("/auth/logout")
+def logout():
+    """Invalidate current session."""
+    return {"status": "ok", "message": "Successfully logged out."}
+
+
+# ==================== SCOPED ANALYTICAL ENDPOINTS ====================
+
 @api_router.get("/summary")
-def get_summary():
-    return analytics_service.summary
+def get_summary(user: Optional[User] = Depends(get_current_user_optional)):
+    return analytics_service.get_scoped_summary(user)
 
 
 @api_router.get("/states")
-def get_states():
-    return analytics_service.state_aggregates
+def get_states(user: Optional[User] = Depends(get_current_user_optional)):
+    return analytics_service.get_scoped_states(user)
 
 
 @api_router.get("/districts")
-def get_districts():
-    return analytics_service.district_aggregates
+def get_districts(user: Optional[User] = Depends(get_current_user_optional)):
+    return analytics_service.get_scoped_districts(user)
 
 
 @api_router.get("/agencies")
-def get_agencies():
-    return analytics_service.agency_aggregates
+def get_agencies(user: Optional[User] = Depends(get_current_user_optional)):
+    return analytics_service.get_scoped_agencies(user)
 
 
 @api_router.get("/categories")
-def get_categories():
-    return analytics_service.category_aggregates
+def get_categories(user: Optional[User] = Depends(get_current_user_optional)):
+    return analytics_service.get_scoped_categories(user)
 
 
 @api_router.get("/duplicates")
-def get_duplicate_candidates(limit: int = 50):
-    return analytics_service.duplicate_candidates[:limit]
+def get_duplicate_candidates(limit: int = 50, user: Optional[User] = Depends(get_current_user_optional)):
+    if not user or user.role == "MINISTRY":
+        return analytics_service.duplicate_candidates[:limit]
+    scoped_works = {w["id"] for w in analytics_service.filter_works_by_scope(user)}
+    scoped_dups = [
+        d for d in analytics_service.duplicate_candidates
+        if d.get("work_a") in scoped_works and d.get("work_b") in scoped_works
+    ]
+    return scoped_dups[:limit]
 
 
 @api_router.get("/alerts")
-def get_alerts():
-    return analytics_service.alerts
+def get_alerts(user: Optional[User] = Depends(get_current_user_optional)):
+    return analytics_service.get_scoped_alerts(user)
 
 
 @api_router.get("/filters")
-def get_filters():
-    states = [{"code": s["code"], "name": s["name"]} for s in analytics_service.state_aggregates]
-    districts = sorted(list({d["district"] for d in analytics_service.district_aggregates}))
-    categories = sorted(list({c["category"] for c in analytics_service.category_aggregates}))
-    agencies = sorted(list({a["agency"] for a in analytics_service.agency_aggregates}))
-    return {
-        "states": states,
-        "districts": districts,
-        "categories": categories,
-        "agencies": agencies,
-        "riskTiers": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
-    }
+def get_filters(user: Optional[User] = Depends(get_current_user_optional)):
+    return analytics_service.get_scoped_filters(user)
 
 
 @api_router.get("/risk")
@@ -129,6 +164,7 @@ def get_risk_works(
     search: str = Query("", description="Search term"),
     sortBy: str = Query("riskScore", description="Field to sort by"),
     sortOrder: str = Query("desc", description="asc or desc"),
+    user: Optional[User] = Depends(get_current_user_optional),
 ):
     return analytics_service.query_works(
         search=search,
@@ -141,6 +177,7 @@ def get_risk_works(
         sortOrder=sortOrder,
         page=page,
         pageSize=pageSize,
+        user=user,
     )
 
 
@@ -160,6 +197,7 @@ def query_works(
     sortOrder: Optional[str] = Query(None, description="asc or desc"),
     page: int = Query(1, ge=1),
     pageSize: int = Query(12, ge=1, le=1000),
+    user: Optional[User] = Depends(get_current_user_optional),
 ):
     tier = riskTier or riskLevel or "ALL"
     direction = sortOrder or sortDir or "desc"
@@ -176,26 +214,39 @@ def query_works(
         sort_dir=direction,
         page=page,
         page_size=pageSize,
+        user=user,
     )
 
 
 @api_router.get("/analytics")
-def get_analytics():
-    return analytics_service.get_analytics()
+def get_analytics(user: Optional[User] = Depends(get_current_user_optional)):
+    return analytics_service.get_scoped_analytics(user)
 
 
 @api_router.get("/works/{work_id}")
-def get_work(work_id: str):
-    detail = analytics_service.get_work_detail(work_id)
+def get_work(work_id: str, user: Optional[User] = Depends(get_current_user_optional)):
+    try:
+        detail = analytics_service.get_work_detail(work_id, user=user)
+    except PermissionError:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Access forbidden: Work {work_id} is outside your authorized jurisdiction.",
+        )
     if not detail:
         raise HTTPException(status_code=404, detail=f"Work {work_id} not found.")
     return detail
 
 
 @api_router.get("/compare/{id_a}/{id_b}")
-def compare_works(id_a: str, id_b: str):
-    work_a = analytics_service.get_work_detail(id_a)
-    work_b = analytics_service.get_work_detail(id_b)
+def compare_works(id_a: str, id_b: str, user: Optional[User] = Depends(get_current_user_optional)):
+    try:
+        work_a = analytics_service.get_work_detail(id_a, user=user)
+        work_b = analytics_service.get_work_detail(id_b, user=user)
+    except PermissionError:
+        raise HTTPException(
+            status_code=403,
+            detail="Access forbidden: One or both works are outside your authorized jurisdiction.",
+        )
 
     if not work_a or not work_b:
         missing = []

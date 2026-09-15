@@ -7,40 +7,7 @@ import {
 import { Wordmark } from '../common/Logo';
 import { cn } from '../../lib/utils';
 
-const NAV = [
-  {
-    section: 'Overview',
-    items: [{ to: '/dashboard', label: 'Command Center', icon: LayoutDashboard, testId: 'nav-dashboard' }],
-  },
-  {
-    section: 'Intelligence',
-    items: [
-      { to: '/risk', label: 'Risk Monitor', icon: ShieldAlert, testId: 'nav-risk' },
-      { to: '/works', label: 'Work Explorer', icon: Search, testId: 'nav-works' },
-      { to: '/analytics', label: 'Analytics', icon: BarChart3, testId: 'nav-analytics' },
-      { to: '/alerts', label: 'Alerts', icon: Bell, testId: 'nav-alerts' },
-    ],
-  },
-  {
-    section: 'Operations',
-    items: [
-      { to: '/agencies', label: 'Agencies', icon: Building2, testId: 'nav-agencies' },
-      { to: '/districts', label: 'Districts', icon: MapPin, testId: 'nav-districts' },
-      { to: '/investigations', label: 'Investigation Queue', icon: ClipboardList, testId: 'nav-investigations' },
-    ],
-  },
-  {
-    section: 'AI',
-    items: [{ to: '/ai', label: 'Sentinel AI', icon: Sparkles, testId: 'nav-ai', accent: true }],
-  },
-  {
-    section: 'System',
-    items: [
-      { to: '/data-health', label: 'Data Health', icon: Activity, testId: 'nav-data-health' },
-      { to: '/settings', label: 'Settings', icon: Settings, testId: 'nav-settings' },
-    ],
-  },
-];
+import { useAuth } from '../../context/AuthContext';
 
 const NavItem = ({ item, onNavigate }) => (
   <NavLink
@@ -64,29 +31,95 @@ const NavItem = ({ item, onNavigate }) => (
   </NavLink>
 );
 
-export const Sidebar = ({ onNavigate, onClose, mobile = false }) => (
-  <aside className="w-[260px] h-full flex-shrink-0 border-r border-hairline bg-shell flex flex-col">
-    <div className="h-16 flex items-center justify-between px-4 border-b border-hairline shrink-0">
-      <Wordmark />
-      {mobile && (
-        <button onClick={onClose} className="text-[#737987] hover:text-[#EDEDED] p-1" data-testid="sidebar-close">
-          <X size={18} />
-        </button>
-      )}
-    </div>
+export const Sidebar = ({ onNavigate, onClose, mobile = false }) => {
+  const { role } = useAuth();
 
-    <nav className="flex-1 overflow-y-auto no-scrollbar px-3 py-4 space-y-5">
-      {NAV.map((group) => (
-        <div key={group.section}>
-          <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5C616D]">{group.section}</div>
-          <div className="space-y-0.5">
-            {group.items.map((item) => (
-              <NavItem key={item.to} item={item} onNavigate={onNavigate} />
-            ))}
+  // Role-tailored dashboard title
+  const dashboardLabel =
+    role === 'DISTRICT_AUTHORITY'
+      ? 'District Center'
+      : role === 'MP'
+      ? 'My Works'
+      : 'Command Center';
+
+  // Role-based permission map
+  const isAllowed = (path) => {
+    if (!role || role === 'MINISTRY') return true;
+    if (role === 'STATE_AUTHORITY') {
+      return path !== '/data-health';
+    }
+    if (role === 'DISTRICT_AUTHORITY') {
+      return ['/dashboard', '/risk', '/works', '/alerts', '/investigations', '/ai', '/settings'].includes(path);
+    }
+    if (role === 'MP') {
+      return ['/dashboard', '/risk', '/works', '/alerts', '/ai', '/settings'].includes(path);
+    }
+    return true;
+  };
+
+  const navGroups = [
+    {
+      section: 'Overview',
+      items: [{ to: '/dashboard', label: dashboardLabel, icon: LayoutDashboard, testId: 'nav-dashboard' }],
+    },
+    {
+      section: 'Intelligence',
+      items: [
+        { to: '/risk', label: 'Risk Monitor', icon: ShieldAlert, testId: 'nav-risk' },
+        { to: '/works', label: 'Work Explorer', icon: Search, testId: 'nav-works' },
+        { to: '/analytics', label: 'Analytics', icon: BarChart3, testId: 'nav-analytics' },
+        { to: '/alerts', label: 'Alerts', icon: Bell, testId: 'nav-alerts' },
+      ],
+    },
+    {
+      section: 'Operations',
+      items: [
+        { to: '/agencies', label: 'Agencies', icon: Building2, testId: 'nav-agencies' },
+        { to: '/districts', label: 'Districts', icon: MapPin, testId: 'nav-districts' },
+        { to: '/investigations', label: 'Investigation Queue', icon: ClipboardList, testId: 'nav-investigations' },
+      ],
+    },
+    {
+      section: 'AI',
+      items: [{ to: '/ai', label: 'Sentinel AI', icon: Sparkles, testId: 'nav-ai', accent: true }],
+    },
+    {
+      section: 'System',
+      items: [
+        { to: '/data-health', label: 'Data Health', icon: Activity, testId: 'nav-data-health' },
+        { to: '/settings', label: 'Settings', icon: Settings, testId: 'nav-settings' },
+      ],
+    },
+  ]
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => isAllowed(item.to)),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  return (
+    <aside className="w-[260px] h-full flex-shrink-0 border-r border-hairline bg-shell flex flex-col">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-hairline shrink-0">
+        <Wordmark />
+        {mobile && (
+          <button onClick={onClose} className="text-[#737987] hover:text-[#EDEDED] p-1" data-testid="sidebar-close">
+            <X size={18} />
+          </button>
+        )}
+      </div>
+
+      <nav className="flex-1 overflow-y-auto no-scrollbar px-3 py-4 space-y-5">
+        {navGroups.map((group) => (
+          <div key={group.section}>
+            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5C616D]">{group.section}</div>
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavItem key={item.to} item={item} onNavigate={onNavigate} />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
-    </nav>
+        ))}
+      </nav>
 
     <div className="px-4 py-4 border-t border-hairline shrink-0 space-y-2.5">
       <div className="flex items-center gap-2">

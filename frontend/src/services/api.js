@@ -15,6 +15,44 @@ export const apiClient = axios.create({
   },
 });
 
+let currentAuthToken = typeof window !== 'undefined' ? localStorage.getItem('sentinel_token') : null;
+
+export function setAuthToken(token) {
+  currentAuthToken = token;
+  if (token) {
+    apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete apiClient.defaults.headers.common['Authorization'];
+  }
+}
+
+// Request interceptor ensuring Bearer token is attached
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = currentAuthToken || (typeof window !== 'undefined' ? localStorage.getItem('sentinel_token') : null);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor handling 401 (session expired)
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('sentinel_token');
+      localStorage.removeItem('sentinel_user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 let hasLoggedFallback = false;
 function logFallback(endpoint, err) {
   if (!hasLoggedFallback) {
@@ -300,12 +338,46 @@ export async function queryWorks(params = {}) {
 
 export const getRiskWorks = queryWorks;
 
+// ==================== AUTHENTICATION ====================
+
+export async function login(username, password) {
+  try {
+    const res = await apiClient.post('/auth/login', { username, password });
+    return res.data;
+  } catch (err) {
+    if (err.response?.data?.detail) {
+      throw new Error(err.response.data.detail);
+    }
+    throw new Error('Authentication failed. Please verify credentials.');
+  }
+}
+
+export async function getCurrentUser() {
+  try {
+    const res = await apiClient.get('/auth/me');
+    return res.data;
+  } catch (err) {
+    return null;
+  }
+}
+
+export async function logout() {
+  try {
+    await apiClient.post('/auth/logout');
+  } catch {
+    // Ignore error
+  }
+}
+
 // ---------- Work Investigation ----------
 export async function getWorkDetail(id) {
   try {
     const res = await apiClient.get(`/works/${id}`);
     return normalizeWork(res.data);
   } catch (err) {
+    if (err.response?.status === 403) {
+      throw new Error(err.response?.data?.detail || 'Access forbidden: Work is outside your authorized jurisdiction.');
+    }
     logFallback(`/works/${id}`, err);
     return getWorkDetailFallback(id);
   }
@@ -343,6 +415,9 @@ export async function getComparison(idA, idB) {
       b: normalizeWork(res.data.b),
     };
   } catch (err) {
+    if (err.response?.status === 403) {
+      throw new Error(err.response?.data?.detail || 'Access forbidden: One or both works are outside your authorized jurisdiction.');
+    }
     logFallback(`/compare/${idA}/${idB}`, err);
     return getComparisonFallback(idA, idB);
   }
