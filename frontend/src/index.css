@@ -76,17 +76,19 @@ code, .font-mono {
 .india-map-svg svg {
     width: 100%;
     height: auto;
+    max-height: 480px;
     display: block;
+    margin: 0 auto;
 }
 .india-map-svg path {
     stroke: #090A0B;
-    stroke-width: 0.6;
+    stroke-width: 0.8;
     cursor: pointer;
-    transition: fill 0.15s ease, opacity 0.15s ease;
+    transition: fill 0.15s ease, opacity 0.15s ease, stroke-width 0.15s ease;
     outline: none;
 }
 .india-map-svg path:hover {
-    opacity: 0.82;
+    opacity: 1 !important;
 }
 
 .tabular-nums {

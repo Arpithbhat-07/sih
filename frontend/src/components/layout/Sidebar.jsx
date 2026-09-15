@@ -138,4 +138,6 @@ export const Sidebar = ({ onNavigate, onClose, mobile = false }) => {
       </div>
     </div>
   </aside>
-);
+  );
+};
+
