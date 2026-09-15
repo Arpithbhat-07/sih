@@ -3,9 +3,18 @@ MPLADS Sentinel - FastAPI Analytics Server
 Exposes high-performance REST APIs driven by the real analytical & ML engine.
 """
 
+import sys
+from pathlib import Path
+
+# Ensure project root and backend are in sys.path regardless of execution folder
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
+for p in [str(PROJECT_ROOT), str(BASE_DIR)]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 from fastapi import FastAPI, APIRouter, Query, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
 import os
 import io
 import pandas as pd
