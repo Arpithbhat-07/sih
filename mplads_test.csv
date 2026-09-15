@@ -1,0 +1,7 @@
+work_id,description,state,district,agency,category,estimated_cost,sanctioned_amount,expenditure,expected_days,actual_days
+W-90001,Construction of CC road with side drains,Karnataka,Bengaluru Urban,Meridian Infra Works,Road Construction,2100000,2300000,2450000,270,300
+W-90002,Construction of community health sub-centre,Tamil Nadu,Chennai,Setu Public Works Division,Health,1400000,4200000,6100000,240,420
+W-90003,Installation of community RO water plant,Maharashtra,Pune,Sujal Water Works Cell,Water & Sanitation,1600000,1650000,980000,210,215
+W-90004,Construction of additional classrooms,Uttar Pradesh,Lucknow,Vikas Engineering Corp,Education,850000,3100000,4700000,240,410
+W-90005,Development of village playground,Kerala,Ernakulam,Prerna Civil Works Unit,Sports,900000,950000,720000,180,185
+W-90006,Construction of public toilet block,Bihar,Patna,Disha Municipal Works,Public Amenities,700000,760000,890000,150,260

@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #090A0B;
+    color: #EDEDED;
+}
+
+code, .font-mono {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+@layer base {
+    :root {
+        --background: 220 9% 4%;
+        --foreground: 0 0% 93%;
+        --card: 220 11% 8%;
+        --card-foreground: 0 0% 93%;
+        --popover: 220 11% 8%;
+        --popover-foreground: 0 0% 93%;
+        --primary: 0 0% 93%;
+        --primary-foreground: 220 9% 4%;
+        --secondary: 220 8% 12%;
+        --secondary-foreground: 0 0% 93%;
+        --muted: 220 8% 12%;
+        --muted-foreground: 222 8% 65%;
+        --accent: 220 8% 14%;
+        --accent-foreground: 0 0% 93%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 222 9% 17%;
+        --input: 222 9% 17%;
+        --ring: 218 100% 65%;
+        --radius: 0.5rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-shell text-[#EDEDED];
+    }
+    ::selection {
+        background: #4D8CFF;
+        color: #ffffff;
+    }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: #090A0B;
+}
+::-webkit-scrollbar-thumb {
+    background: #272A30;
+    border-radius: 6px;
+    border: 2px solid #090A0B;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #383C45;
+}
+
+/* India map styling */
+.india-map-svg svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+.india-map-svg path {
+    stroke: #090A0B;
+    stroke-width: 0.6;
+    cursor: pointer;
+    transition: fill 0.15s ease, opacity 0.15s ease;
+    outline: none;
+}
+.india-map-svg path:hover {
+    opacity: 0.82;
+}
+
+.tabular-nums {
+    font-variant-numeric: tabular-nums;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

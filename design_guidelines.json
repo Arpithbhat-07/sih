@@ -1,0 +1,124 @@
+{
+  "theme_mode": "dark",
+  "typography": {
+    "primary": "IBM Plex Sans",
+    "monospace": "IBM Plex Mono",
+    "rules": [
+      "Avoid Inter/Roboto. Use IBM Plex Sans for all UI text for an authoritative, intelligence-platform feel.",
+      "Use IBM Plex Mono for ALL numerical data, risk scores, currency, financial analysis, and unique IDs.",
+      "Headings must use tight tracking (tracking-tight) and balanced line heights.",
+      "Keep text sizes moderate. Max heading size text-3xl for page titles to maintain an enterprise software density."
+    ]
+  },
+  "colors": {
+    "backgrounds": {
+      "app_shell": "#090A0B",
+      "card_surface": "#121417",
+      "card_hover": "#1A1D21",
+      "table_header": "#0D0F12"
+    },
+    "borders": {
+      "subtle": "#272A30",
+      "focus": "#4D8CFF",
+      "divider": "#1E2126"
+    },
+    "text": {
+      "primary": "#EDEDED",
+      "secondary": "#A0A5B0",
+      "muted": "#737987"
+    },
+    "risk_semantic": {
+      "critical": { "text": "#F15252", "bg": "rgba(241,82,82,0.1)", "border": "rgba(241,82,82,0.2)" },
+      "high": { "text": "#F59638", "bg": "rgba(245,150,56,0.1)", "border": "rgba(245,150,56,0.2)" },
+      "medium": { "text": "#F3D35E", "bg": "rgba(243,211,94,0.1)", "border": "rgba(243,211,94,0.2)" },
+      "low": { "text": "#52C47E", "bg": "rgba(82,196,126,0.1)", "border": "rgba(82,196,126,0.2)" }
+    },
+    "accent": {
+      "brand_blue": "#4D8CFF",
+      "ai_purple": "#8B5CF6",
+      "ai_purple_muted": "rgba(139,92,246,0.1)"
+    }
+  },
+  "grids": {
+    "dashboard_bento": "grid-cols-1 md:grid-cols-12 gap-6",
+    "kpi_row": "col-span-12 md:col-span-3",
+    "main_chart": "col-span-12 md:col-span-8",
+    "side_panel": "col-span-12 md:col-span-4"
+  },
+  "layouts": {
+    "app_shell": "flex h-screen bg-[#090A0B] text-[#EDEDED] overflow-hidden selection:bg-[#4D8CFF] selection:text-white",
+    "sidebar": "w-[260px] flex-shrink-0 border-r border-[#272A30] bg-[#090A0B] flex flex-col z-20",
+    "header": "h-16 border-b border-[#272A30] bg-[#090A0B] flex items-center px-6 justify-between shrink-0 z-10",
+    "main_content": "flex-1 overflow-y-auto p-6 md:p-8 bg-[#090A0B] relative",
+    "transparency_rule": "NEVER use transparent backgrounds for headers, sticky panels, or modals. Always use solid #090A0B or #121417."
+  },
+  "component name": {
+    "kpi_card": "bg-[#121417] border border-[#272A30] rounded-lg p-5 flex flex-col gap-2 hover:border-[#383C45] transition-colors relative overflow-hidden",
+    "data_table": "w-full text-sm text-left whitespace-nowrap. Header row bg-[#0D0F12] border-y border-[#272A30] text-[#A0A5B0] font-medium uppercase tracking-wider text-xs px-4 py-3. Body rows border-b border-[#1E2126] hover:bg-[#1A1D21] transition-colors",
+    "risk_badge": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-mono font-medium border (use risk_semantic colors for bg/text/border)",
+    "radial_meter": "Use Recharts PieChart with 2 cells (value, remainder). Value color maps to risk tier. Inner radius 80%, outer radius 100%. Center custom label showing score using IBM Plex Mono.",
+    "timeline": "Left border border-l-2 border-[#272A30] ml-3 relative. Nodes are absolute positioned circles -left-[9px] w-4 h-4 rounded-full bg-[#121417] border-2 border-[#4D8CFF].",
+    "ai_insight_panel": "bg-[#121417] border border-[#272A30] border-t-2 border-t-[#8B5CF6] rounded-lg p-5 flex flex-col gap-3 shadow-[0_8px_30px_rgba(139,92,246,0.05)]",
+    "button_primary": "bg-[#EDEDED] text-[#090A0B] hover:bg-white font-medium px-4 py-2 rounded transition-colors text-sm",
+    "button_secondary": "bg-[#121417] text-[#EDEDED] border border-[#272A30] hover:bg-[#1A1D21] font-medium px-4 py-2 rounded transition-colors text-sm"
+  },
+  "visual enhancers": {
+    "shadows": "Minimal. Avoid large blurs. Dropdown/Modal shadow: shadow-[0_4px_24px_rgba(0,0,0,0.6)].",
+    "borders": "Primary element for structure. 1px solid #272A30. Avoid glassmorphism entirely to maintain linear-quality crispness.",
+    "radius": "Moderate and serious. rounded-lg (8px) for panels, rounded-md (6px) for inner components, rounded (4px) for badges and buttons."
+  },
+  "motion": {
+    "page_transition": "Framer Motion: initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}",
+    "hover_states": "Snappy. transition-colors duration-150 ease-in-out.",
+    "rule": "No bouncy, exaggerated, or slow animations. Must feel like a high-performance C++ military/intelligence tool, not a consumer social app."
+  },
+  "accessibility": {
+    "contrast": "Ensure minimum 4.5:1 text contrast. Primary text #EDEDED against #121417 is 14:1.",
+    "testing": "All interactive and key informational elements MUST include a 'data-testid' attribute (e.g., data-testid='risk-monitor-table', data-testid='kpi-total-expenditure', data-testid='nav-link-dashboard').",
+    "focus": "Focus states must use ring-2 ring-[#4D8CFF] ring-offset-2 ring-offset-[#090A0B] outline-none."
+  },
+  "media": {
+    "icons": "Lucide React. Stroke width 1.5. Icon size 16px or 18px for UI elements, 24px for empty states.",
+    "charts": "Recharts. Grid lines: <CartesianGrid stroke='#272A30' strokeDasharray='3 3' vertical={false} />. Tooltip: contentStyle={{ backgroundColor: '#121417', borderColor: '#272A30', color: '#EDEDED', borderRadius: '8px' }}. Axis: tick={{ fill: '#A0A5B0', fontSize: 12, fontFamily: 'IBM Plex Mono' }} axisLine={false} tickLine={false}."
+  },
+  "3d libraries": {
+    "strategy": "None needed for this 2D intelligence dashboard. Rely strictly on Recharts and CSS structural styling for an authoritative, data-heavy interface."
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1000",
+      "category": "auth_background",
+      "description": "Dark cyber/network abstract background for login or loading states if needed."
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=200",
+      "category": "avatar",
+      "description": "Placeholder for user profile or investigating officer."
+    }
+  ],
+  "instructions_to_main_agent": [
+    "Create a production-ready, frontend-only React dashboard using JavaScript (.js/.jsx), NOT TypeScript.",
+    "Import Google Fonts for 'IBM Plex Sans' (weights 400, 500, 600) and 'IBM Plex Mono' (weights 400, 500). Apply them in tailwind config.",
+    "Implement a persistent App Shell layout with a left sidebar (w-[260px]) and a top header (h-16). Main content should scroll independently.",
+    "Build the 4 main views: Command Center, Risk Monitor, Work Investigation, and Programme Analytics.",
+    "Populate the UI with extremely realistic mock data representing the MPLAD Scheme (Members of Parliament Local Area Development Scheme).",
+    "Data should include: District names (e.g., Pune, Varanasi), executing agencies, financial figures (in ₹ Lakhs/Crores formatted via IBM Plex Mono), anomaly types (e.g., 'Tender split to avoid oversight', 'Ghost asset detected'), and Risk Scores (0-100).",
+    "Never use generic placeholder text like 'Lorem Ipsum'. Always use context-specific mock data.",
+    "The AI Sentinel interface should look like an intelligence feed with confidence scores (e.g., 'Confidence: 94%').",
+    "Include Recharts for the Programme Analytics, risk trends, and expenditure charts. Make sure chart backgrounds match the dark theme."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling. Use a dense, bento-grid, enterprise layout.",
+    "Create depth through layered design elements with z-index hierarchy, but rely strictly on 1px borders (#272A30) rather than heavy drop shadows.",
+    "You MUST NOT apply universal transition (e.g., transition: all). Always add transitions for specific properties.",
+    "You MUST NOT center align the app container. Text alignment should be left-aligned for data readability.",
+    "Always use modern button styles like sharp rectangular buttons with interaction animations & color relevant to the app style.",
+    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons. Use Lucide icons.",
+    "Every interaction needs micro-animations - hover states, transitions, and entrance animations. Static = dead.",
+    "Use exact spacing as prescribed. Ensure containers with borders have adequate padding (p-5 or p-6).",
+    "All interactive and key informational elements MUST include a 'data-testid' attribute (e.g., data-testid='submit-button').",
+    "Headers MUST have a solid background (bg-[#090A0B]). NEVER use a transparent header over scrolling content."
+  ]
+}
