@@ -1,42 +1,51 @@
 """
-MPLADS Sentinel - Unified Analytics Pipeline
-Coordinates preprocessing, anomaly detectors, duplicate screening,
-risk scoring, and aggregation into a single, high-performance pipeline.
+ProcureGuard - Unified Analytics & Machine Learning Pipeline
+Coordinates multi-modal anomaly detection engines, vendor intelligence,
+relationship network modeling, composite risk scoring, and analytical aggregations.
 """
 
+import math
 import pandas as pd
 import numpy as np
+from pathlib import Path
 from typing import Dict, Any, List, Optional
+
 from backend.ml.preprocessing import load_dataset, preprocess_dataframe, validate_schema
-from backend.ml.cost_anomaly import CostAnomalyDetector
-from backend.ml.delay_detection import DelayDetector
-from backend.ml.duplicate_detection import DuplicateCandidateDetector
-from backend.ml.agency_anomaly import AgencyAnomalyDetector
-from backend.ml.risk_engine import RiskEngine, tier_for_score, RISK_TIERS
+from backend.ml.price_anomaly import PriceAnomalyDetector
+from backend.ml.bid_anomaly import BidAnomalyDetector
+from backend.ml.vendor_anomaly import VendorAnomalyDetector
+from backend.ml.repeated_award import RepeatedAwardDetector
+from backend.ml.relationship_anomaly import RelationshipAnomalyDetector
+from backend.ml.contract_anomaly import ContractAnomalyDetector
+from backend.ml.risk_engine import RiskEngine, tier_for_score, RISK_TIERS, DISCLAIMER_TEXT
 
 
 class AnalyticsService:
     def __init__(self, csv_path: Optional[str] = None):
         self.csv_path = csv_path
         self.df: Optional[pd.DataFrame] = None
-        self.works: List[Dict[str, Any]] = []
-        self.works_by_id: Dict[str, Dict[str, Any]] = {}
+        self.tenders: List[Dict[str, Any]] = []
+        self.tenders_by_id: Dict[str, Dict[str, Any]] = {}
         self.summary: Dict[str, Any] = {}
         self.state_aggregates: List[Dict[str, Any]] = []
         self.district_aggregates: List[Dict[str, Any]] = []
-        self.agency_aggregates: List[Dict[str, Any]] = []
+        self.department_aggregates: List[Dict[str, Any]] = []
+        self.vendor_aggregates: List[Dict[str, Any]] = []
         self.category_aggregates: List[Dict[str, Any]] = []
-        self.duplicate_candidates: List[Dict[str, Any]] = []
+        self.network_graph: Dict[str, Any] = {"nodes": [], "links": []}
         self.alerts: List[Dict[str, Any]] = []
+
+        # Legacy backward-compatibility aliases
+        self.works = self.tenders
+        self.works_by_id = self.tenders_by_id
+        self.agency_aggregates = self.vendor_aggregates
+        self.duplicate_candidates: List[Dict[str, Any]] = []
 
         if csv_path:
             self.analyze_dataset(csv_path)
 
     def analyze_dataset(self, csv_or_df: Any) -> Dict[str, Any]:
-        """
-        Execute the complete multi-modal analysis pipeline.
-        Returns a comprehensive dictionary of all analytical artifacts.
-        """
+        """Execute full multi-modal procurement anomaly and intelligence pipeline."""
         if isinstance(csv_or_df, pd.DataFrame):
             df = preprocess_dataframe(csv_or_df)
         else:
@@ -44,180 +53,197 @@ class AnalyticsService:
 
         self.df = df
 
-        # 1. Cost Anomaly Detection
-        cost_detector = CostAnomalyDetector()
-        cost_detector.fit(df)
-        cost_results = cost_detector.analyze_dataframe(df)
+        # 1. Price Anomaly Detector
+        price_detector = PriceAnomalyDetector()
+        price_detector.fit(df)
+        price_results = price_detector.analyze_dataframe(df)
 
-        # 2. Delay Anomaly Detection
-        delay_detector = DelayDetector()
-        delay_detector.fit(df)
-        delay_results = delay_detector.analyze_dataframe(df)
+        # 2. Bid Anomaly Detector
+        bid_detector = BidAnomalyDetector()
+        bid_detector.fit(df)
+        bid_results = bid_detector.analyze_dataframe(df)
 
-        # 3. Duplicate / Attribute Similarity Detection
-        dup_detector = DuplicateCandidateDetector(min_similarity_threshold=70)
-        dup_detector.fit_and_detect(df)
-        self.duplicate_candidates = dup_detector.get_candidates()
+        # 3. Vendor Anomaly & Behavior Detector
+        vendor_detector = VendorAnomalyDetector()
+        vendor_detector.fit(df, price_results=price_results)
+        self.vendor_aggregates = vendor_detector.get_profiles()
+        self.agency_aggregates = self.vendor_aggregates
 
-        # 4. Implementing Agency Anomaly Detection
-        agency_detector = AgencyAnomalyDetector()
-        agency_detector.fit(df, cost_results=cost_results, delay_results=delay_results)
-        self.agency_aggregates = agency_detector.get_profiles()
+        # 4. Repeated Award & Department Concentration Detector
+        repeated_detector = RepeatedAwardDetector()
+        repeated_detector.fit(df)
+        repeated_results = repeated_detector.analyze_dataframe(df)
 
-        # 5. Composite Risk Engine
+        # 5. Relationship & Network Anomaly Detector
+        relationship_detector = RelationshipAnomalyDetector()
+        relationship_detector.fit_and_build_graph(df)
+        self.network_graph = relationship_detector.get_network_graph()
+
+        # 6. Contract & Payment Execution Detector
+        contract_detector = ContractAnomalyDetector()
+        contract_detector.fit(df)
+        contract_results = contract_detector.analyze_dataframe(df)
+
+        # 7. Composite Risk Scoring Engine
         risk_engine = RiskEngine()
-        enriched_works = []
-        self.works_by_id = {}
+        enriched_tenders = []
+        self.tenders_by_id = {}
 
         for i, row in df.iterrows():
-            wid = row["work_id"]
+            tid = row["tender_id"]
             row_dict = row.to_dict()
 
-            c_eval = cost_results[i]
-            d_eval = delay_results[i]
-            dup_eval = dup_detector.get_work_result(wid)
-            a_eval = agency_detector.analyze_work(row)
+            p_eval = price_results[i]
+            b_eval = bid_results[i]
+            v_eval = vendor_detector.analyze_tender(row)
+            rep_eval = repeated_results[i]
+            rel_eval = relationship_detector.analyze_tender(row)
+            c_eval = contract_results[i]
 
             risk_eval = risk_engine.compute_composite_risk(
-                work_id=wid,
-                cost_eval=c_eval,
-                delay_eval=d_eval,
-                duplicate_eval=dup_eval,
-                agency_eval=a_eval,
+                tender_id=tid,
+                price_eval=p_eval,
+                bid_eval=b_eval,
+                vendor_eval=v_eval,
+                repeated_eval=rep_eval,
+                relationship_eval=rel_eval,
+                contract_eval=c_eval,
                 row_dict=row_dict,
             )
 
-            # Format findings matching investigation dossier model
+            # Format findings for presentation
             formatted_findings = []
             for f_idx, f in enumerate(risk_eval["findings"]):
-                det = f.get("detector", "")
-                conf = f.get("confidence", 0.85)
-                conf_pct = int(round(conf * 100)) if conf <= 1.0 else int(round(conf))
-                msg = f.get("message", "")
-
-                if det == "cost":
-                    sev = "CRITICAL" if c_eval.get("deviation_percent", 0) > 40 else "HIGH" if c_eval.get("is_anomaly") else "LOW"
-                    evidence = f"+{int(round(c_eval.get('deviation_percent', 0)))}% above category median"
-                elif det == "delay":
-                    sev = "CRITICAL" if int(row["delay_days"]) > 120 else "HIGH" if bool(row["delayed"]) else "LOW"
-                    evidence = f"+{int(row['delay_days'])} days beyond expected completion" if bool(row["delayed"]) else "On schedule"
-                elif det == "duplicate":
-                    sev = "HIGH" if dup_eval["is_anomaly"] else "LOW"
-                    evidence = f"High attribute similarity ({dup_eval.get('similarity_score', 80)}%) with {dup_eval.get('similar_work_id', 'peer work')}" if dup_eval["is_anomaly"] else "Baseline attribute uniqueness"
-                elif det == "agency":
-                    sev = "MEDIUM" if a_eval.get("is_anomaly") else "LOW"
-                    evidence = "Elevated anomaly/slippage share for agency" if a_eval.get("is_anomaly") else "Within normal portfolio baselines"
-                else:
-                    sev = "LOW"
-                    evidence = "All component indicators within expected baseline"
-
                 formatted_findings.append({
-                    "id": f"f-{det or f_idx}",
-                    "detector": det,
-                    "severity": sev,
-                    "title": f.get("title", "Anomaly Analysis"),
-                    "explanation": msg,
-                    "message": msg,
-                    "evidence": evidence,
-                    "confidence": conf_pct,
+                    "id": f"f-{f.get('detector', f_idx)}",
+                    "detector": f.get("detector", "general"),
+                    "severity": f.get("severity", "MEDIUM"),
+                    "title": f.get("title", "Signal Analysis"),
+                    "explanation": f.get("explanation", ""),
+                    "message": f.get("explanation", ""),
+                    "evidence": f.get("evidence", ""),
+                    "confidence": f.get("confidence", 85),
                 })
 
-            work_record = {
-                "id": wid,
-                "workId": wid,
-                "description": row["description"],
+            awarded = int(round(row["awarded_value"]))
+            payment = int(round(row["payment_amount"]))
+            estimated = int(round(row["estimated_value"]))
+
+            tender_record = {
+                "id": tid,
+                "tenderId": tid,
+                "workId": tid,  # legacy
+                "title": row["tender_title"],
+                "description": row["tender_title"],
+                "department": row.get("department", "Procurement Authority"),
+                "procurementAuthority": row.get("procurement_authority", f"{row['state']} {row.get('department', '')}"),
                 "state": row["state"],
                 "stateCode": row.get("state_code", "IN-XX"),
                 "district": row["district"],
-                "constituency": row.get("constituency", f"{row['district']} PC"),
-                "mp": row.get("mp_name", "Hon'ble MP"),
-                "agency": row["agency"],
+                "location": row.get("location", f"{row['district']}, {row['state']}"),
                 "category": row["category"],
-                "estimatedCost": int(round(row["estimated_cost"])),
-                "sanctionedAmount": int(round(row["sanctioned_amount"])),
-                "expenditure": int(round(row["expenditure"])),
+                "vendorId": row.get("winning_vendor_id", "V-1000"),
+                "vendorName": row.get("winning_vendor_name", "General Vendor"),
+                "agency": row.get("winning_vendor_name", "General Vendor"),  # legacy
+                "contractId": row.get("contract_id", f"CNT-{tid[-5:]}"),
+                "estimatedValue": estimated,
+                "estimatedCost": estimated,  # legacy
+                "awardedValue": awarded,
+                "sanctionedAmount": awarded,  # legacy
+                "paymentAmount": payment,
+                "expenditure": payment,  # legacy
                 "utilization": float(row["utilization"]),
-                "costDeviation": int(round(c_eval.get("deviation_percent", 0))),
-                "expectedDays": int(row["expected_days"]),
-                "actualDays": int(row["actual_days"]),
+                "costDeviation": int(round(p_eval.get("deviation_percent", 0))),
+                "bidderCount": int(row.get("bidder_count", 5)),
+                "contractDuration": int(row.get("expected_days", 180)),
+                "expectedDays": int(row.get("expected_days", 180)),  # legacy
+                "actualDays": int(row.get("actual_days", 180)),      # legacy
                 "delayed": bool(row["delayed"]),
                 "delayDays": int(row["delay_days"]),
-                "sanctionDate": str(row.get("sanction_date")) if not pd.isna(row.get("sanction_date")) else "2025-04-01T00:00:00.000Z",
-                "expectedCompletion": str(row.get("expected_completion")) if not pd.isna(row.get("expected_completion")) else "2026-01-01T00:00:00.000Z",
-                "actualCompletion": str(row.get("actual_completion")) if not pd.isna(row.get("actual_completion")) else None,
+                "completionDelayDays": int(row["delay_days"]),
+                "tenderDate": str(row.get("tender_date", "2025-04-01T00:00:00.000Z")),
+                "awardDate": str(row.get("award_date", "2025-05-15T00:00:00.000Z")),
+                "sanctionDate": str(row.get("award_date", "2025-05-15T00:00:00.000Z")),  # legacy
+                "expectedCompletion": str(row.get("expected_completion", "2026-01-01T00:00:00.000Z")),
+                "actualCompletion": str(row.get("actual_completion")) if not pd.isna(row.get("actual_completion")) and row.get("actual_completion") else None,
                 "status": row["status"],
-                "duplicateCandidate": dup_eval["is_anomaly"],
-                "duplicateMatchId": dup_eval.get("similar_work_id"),
-                "duplicateSimilarity": dup_eval.get("similarity_score", 0),
                 "riskScore": risk_eval["risk_score"],
                 "riskTier": risk_eval["risk_level"],
                 "primarySignal": risk_eval["primary_signal"],
                 "signals": risk_eval["signals"],
                 "breakdown": [
-                    {"key": "Cost anomaly", "value": risk_eval["breakdown"]["cost_score"], "max": 35},
-                    {"key": "Delay anomaly", "value": risk_eval["breakdown"]["delay_score"], "max": 25},
-                    {"key": "Duplicate similarity", "value": risk_eval["breakdown"]["duplicate_score"], "max": 20},
-                    {"key": "Agency anomaly", "value": risk_eval["breakdown"]["agency_score"], "max": 15},
-                    {"key": "Compliance", "value": risk_eval["breakdown"]["compliance_score"], "max": 5},
+                    {"key": "Price anomaly", "value": risk_eval["breakdown"]["price_score"], "max": 25},
+                    {"key": "Bid participation", "value": risk_eval["breakdown"]["bid_score"], "max": 20},
+                    {"key": "Vendor behavior", "value": risk_eval["breakdown"]["vendor_score"], "max": 20},
+                    {"key": "Repeated awards", "value": risk_eval["breakdown"]["repeated_score"], "max": 15},
+                    {"key": "Relationship network", "value": risk_eval["breakdown"]["relationship_score"], "max": 15},
+                    {"key": "Contract execution", "value": risk_eval["breakdown"]["contract_score"], "max": 5},
                 ],
                 "findings": formatted_findings,
                 "recommendedAction": risk_eval["recommended_action"],
+                "duplicateCandidate": bool(rep_eval.get("is_anomaly", False)),
+                "duplicateSimilarity": 85 if rep_eval.get("is_anomaly", False) else 0,
             }
 
-            enriched_works.append(work_record)
-            self.works_by_id[wid] = work_record
+            enriched_tenders.append(tender_record)
+            self.tenders_by_id[tid] = tender_record
 
-        self.works = enriched_works
+        self.tenders = enriched_tenders
+        self.works = self.tenders
+        self.works_by_id = self.tenders_by_id
 
-        # 6. Global KPI Summary
+        # 8. Summary KPIs
         tier_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-        for w in self.works:
-            tier_counts[w["riskTier"]] += 1
+        for t in self.tenders:
+            tier_counts[t["riskTier"]] += 1
 
-        total_sanctioned = sum(w["sanctionedAmount"] for w in self.works)
-        total_expenditure = sum(w["expenditure"] for w in self.works)
-        overall_utilization = round((total_expenditure / total_sanctioned * 100.0), 1) if total_sanctioned > 0 else 0.0
+        tot_awarded = sum(t["awardedValue"] for t in self.tenders)
+        tot_paid = sum(t["paymentAmount"] for t in self.tenders)
+        util = round((tot_paid / tot_awarded * 100.0), 1) if tot_awarded > 0 else 0.0
 
         self.summary = {
-            "totalWorks": len(self.works),
-            "totalSanctioned": total_sanctioned,
-            "totalExpenditure": total_expenditure,
-            "highRiskWorks": tier_counts["CRITICAL"] + tier_counts["HIGH"],
+            "totalTenders": len(self.tenders),
+            "totalWorks": len(self.tenders),  # legacy
+            "totalAwardValue": tot_awarded,
+            "totalSanctioned": tot_awarded,  # legacy
+            "totalExpenditure": tot_paid,
+            "highPriorityCases": tier_counts["CRITICAL"] + tier_counts["HIGH"],
+            "highRiskWorks": tier_counts["CRITICAL"] + tier_counts["HIGH"],  # legacy
             "criticalWorks": tier_counts["CRITICAL"],
-            "delayedWorks": sum(1 for w in self.works if w["delayed"]),
-            "duplicateCandidates": sum(1 for w in self.works if w["duplicateCandidate"]),
+            "delayedWorks": sum(1 for t in self.tenders if t["delayed"]),
+            "duplicateCandidates": sum(1 for t in self.tenders if t["duplicateCandidate"]),
             "counts": tier_counts,
-            "utilization": overall_utilization,
+            "utilization": util,
             "datasetName": "Synthetic Demonstration Dataset",
-            "disclaimer": "Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.",
+            "disclaimer": DISCLAIMER_TEXT,
         }
 
-        # 7. Aggregations (State, District, Category)
+        # 9. Build Aggregates & Alerts
         self._build_aggregates()
-
-        # 8. Priority Alerts
+        self.summary["stateSummary"] = self.state_aggregates
         self._build_alerts()
 
         return {
             "summary": self.summary,
-            "total_works": len(self.works),
-            "duplicate_pairs_found": len(self.duplicate_candidates),
-            "agencies_analyzed": len(self.agency_aggregates),
+            "total_tenders": len(self.tenders),
+            "total_works": len(self.tenders),
+            "vendors_profiled": len(self.vendor_aggregates),
             "alerts_generated": len(self.alerts),
         }
 
     def _build_aggregates(self):
-        """Compute state, district, and category analytics."""
-        # State Aggregates
+        """Aggregate data by State, District, Department, and Category."""
+        # State Aggregates (Used by IndiaMap)
         state_map: Dict[str, Dict[str, Any]] = {}
-        for w in self.works:
-            st = w["state"]
+        for t in self.tenders:
+            st = t["state"]
             if st not in state_map:
                 state_map[st] = {
-                    "code": w["stateCode"],
+                    "code": t["stateCode"],
                     "name": st,
                     "districts": set(),
                     "works": 0,
+                    "tenders": 0,
                     "sanctioned": 0,
                     "expenditure": 0,
                     "highRisk": 0,
@@ -227,408 +253,182 @@ class AnalyticsService:
                     "counts": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
                 }
             s = state_map[st]
-            s["districts"].add(w["district"])
+            s["districts"].add(t["district"])
             s["works"] += 1
-            s["sanctioned"] += w["sanctionedAmount"]
-            s["expenditure"] += w["expenditure"]
-            s["risk_sum"] += w["riskScore"]
-            s["counts"][w["riskTier"]] += 1
-            if w["riskTier"] in ["CRITICAL", "HIGH"]:
+            s["tenders"] += 1
+            s["sanctioned"] += t["awardedValue"]
+            s["expenditure"] += t["paymentAmount"]
+            s["risk_sum"] += t["riskScore"]
+            s["counts"][t["riskTier"]] += 1
+            if t["riskTier"] in ["CRITICAL", "HIGH"]:
                 s["highRisk"] += 1
-            if w["delayed"]:
+            if t["delayed"]:
                 s["delayed"] += 1
-            if w["duplicateCandidate"]:
-                s["duplicateCandidates"] += 1
 
         self.state_aggregates = []
         for st, s in state_map.items():
             avg_risk = round(s["risk_sum"] / s["works"], 1) if s["works"] > 0 else 0.0
-            util = round((s["expenditure"] / s["sanctioned"] * 100.0), 1) if s["sanctioned"] > 0 else 0.0
+            u = round((s["expenditure"] / s["sanctioned"] * 100.0), 1) if s["sanctioned"] > 0 else 0.0
             self.state_aggregates.append({
                 "code": s["code"],
                 "name": s["name"],
                 "state": s["name"],
-                "districts": sorted(list(s["districts"])),
                 "works": s["works"],
                 "totalWorks": s["works"],
-                "counts": s["counts"],
-                "highRisk": s["highRisk"],
+                "tenders": s["tenders"],
                 "sanctioned": s["sanctioned"],
                 "expenditure": s["expenditure"],
-                "utilization": util,
+                "highRisk": s["highRisk"],
                 "avgRisk": avg_risk,
+                "mean_risk": avg_risk,
                 "delayed": s["delayed"],
-                "duplicateCandidates": s["duplicateCandidates"],
-                "riskTier": tier_for_score(int(round(avg_risk))),
+                "counts": s["counts"],
+                "utilization": u,
+                "districtsCount": len(s["districts"]),
             })
-        self.state_aggregates.sort(key=lambda x: x["highRisk"], reverse=True)
-
-        # Attach top 5 state summary into overall summary
-        self.summary["stateSummary"] = [
-            {"state": s["name"], "code": s["code"], "highRisk": s["highRisk"], "works": s["works"], "avgRisk": s["avgRisk"]}
-            for s in self.state_aggregates[:5]
-        ]
+        self.state_aggregates.sort(key=lambda x: x["name"])
 
         # District Aggregates
         dist_map: Dict[str, Dict[str, Any]] = {}
-        for w in self.works:
-            key = f"{w['district']}|{w['state']}"
+        for t in self.tenders:
+            key = f"{t['district']}|{t['state']}"
             if key not in dist_map:
                 dist_map[key] = {
-                    "district": w["district"],
-                    "state": w["state"],
-                    "stateCode": w["stateCode"],
+                    "name": t["district"],
+                    "state": t["state"],
+                    "stateCode": t["stateCode"],
                     "works": 0,
                     "sanctioned": 0,
                     "expenditure": 0,
-                    "delayed": 0,
                     "highRisk": 0,
+                    "delayed": 0,
                     "risk_sum": 0,
-                    "alerts": 0,
+                    "counts": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
                 }
             d = dist_map[key]
             d["works"] += 1
-            d["sanctioned"] += w["sanctionedAmount"]
-            d["expenditure"] += w["expenditure"]
-            d["risk_sum"] += w["riskScore"]
-            if w["delayed"]:
-                d["delayed"] += 1
-            if w["riskTier"] in ["CRITICAL", "HIGH"]:
+            d["sanctioned"] += t["awardedValue"]
+            d["expenditure"] += t["paymentAmount"]
+            d["risk_sum"] += t["riskScore"]
+            d["counts"][t["riskTier"]] += 1
+            if t["riskTier"] in ["CRITICAL", "HIGH"]:
                 d["highRisk"] += 1
-                d["alerts"] += len(w["signals"])
+            if t["delayed"]:
+                d["delayed"] += 1
 
         self.district_aggregates = []
-        for d in dist_map.values():
-            avg_r = round(d["risk_sum"] / d["works"], 1) if d["works"] > 0 else 0.0
-            u = round((d["expenditure"] / d["sanctioned"] * 100.0), 1) if d["sanctioned"] > 0 else 0.0
+        for _, d in dist_map.items():
+            avg_risk = round(d["risk_sum"] / d["works"], 1) if d["works"] > 0 else 0.0
             self.district_aggregates.append({
-                "district": d["district"],
+                "id": f"DIST-{len(self.district_aggregates)+1:03d}",
+                "name": d["name"],
+                "district": d["name"],
                 "state": d["state"],
                 "stateCode": d["stateCode"],
+                "projects": d["works"],
                 "works": d["works"],
                 "sanctioned": d["sanctioned"],
+                "value": d["sanctioned"],
                 "expenditure": d["expenditure"],
-                "delayed": d["delayed"],
                 "highRisk": d["highRisk"],
-                "alerts": d["alerts"],
-                "avgRisk": avg_r,
-                "utilization": u,
+                "avgRisk": avg_risk,
+                "delayed": d["delayed"],
+                "counts": d["counts"],
             })
-        self.district_aggregates.sort(key=lambda x: x["avgRisk"], reverse=True)
+        self.district_aggregates.sort(key=lambda x: x["projects"], reverse=True)
+
+        # Department Aggregates
+        dept_map: Dict[str, Dict[str, Any]] = {}
+        for t in self.tenders:
+            dept = t["department"]
+            if dept not in dept_map:
+                dept_map[dept] = {
+                    "department": dept,
+                    "tenders": 0,
+                    "awarded": 0,
+                    "paid": 0,
+                    "highRisk": 0,
+                    "risk_sum": 0,
+                }
+            dm = dept_map[dept]
+            dm["tenders"] += 1
+            dm["awarded"] += t["awardedValue"]
+            dm["paid"] += t["paymentAmount"]
+            dm["risk_sum"] += t["riskScore"]
+            if t["riskTier"] in ["CRITICAL", "HIGH"]:
+                dm["highRisk"] += 1
+
+        self.department_aggregates = []
+        for dept, dm in dept_map.items():
+            self.department_aggregates.append({
+                "department": dept,
+                "tenders": dm["tenders"],
+                "awardedValue": dm["awarded"],
+                "paidAmount": dm["paid"],
+                "highRisk": dm["highRisk"],
+                "avgRisk": round(dm["risk_sum"] / dm["tenders"], 1) if dm["tenders"] > 0 else 0.0,
+            })
+        self.department_aggregates.sort(key=lambda x: x["highRisk"], reverse=True)
 
         # Category Aggregates
         cat_map: Dict[str, Dict[str, Any]] = {}
-        for w in self.works:
-            cat = w["category"]
+        for t in self.tenders:
+            cat = t["category"]
             if cat not in cat_map:
                 cat_map[cat] = {
                     "category": cat,
-                    "works": 0,
+                    "count": 0,
                     "sanctioned": 0,
-                    "delayed": 0,
+                    "expenditure": 0,
+                    "high_risk": 0,
                     "risk_sum": 0,
-                    "costs": [],
                 }
-            c = cat_map[cat]
-            c["works"] += 1
-            c["sanctioned"] += w["sanctionedAmount"]
-            c["risk_sum"] += w["riskScore"]
-            c["costs"].append(w["sanctionedAmount"])
-            if w["delayed"]:
-                c["delayed"] += 1
+            cm = cat_map[cat]
+            cm["count"] += 1
+            cm["sanctioned"] += t["awardedValue"]
+            cm["expenditure"] += t["paymentAmount"]
+            cm["risk_sum"] += t["riskScore"]
+            if t["riskTier"] in ["CRITICAL", "HIGH"]:
+                cm["high_risk"] += 1
 
         self.category_aggregates = []
-        for cat, c in cat_map.items():
+        for cat, cm in cat_map.items():
             self.category_aggregates.append({
                 "category": cat,
-                "works": c["works"],
-                "sanctioned": c["sanctioned"],
-                "avgRisk": round(c["risk_sum"] / c["works"], 1) if c["works"] > 0 else 0.0,
-                "medianCost": int(round(np.median(c["costs"]))) if c["costs"] else 0,
-                "delayed": c["delayed"],
+                "count": cm["count"],
+                "sanctioned": cm["sanctioned"],
+                "expenditure": cm["expenditure"],
+                "high_risk": cm["high_risk"],
+                "highRisk": cm["high_risk"],
+                "avgRisk": round(cm["risk_sum"] / cm["count"], 1) if cm["count"] > 0 else 0.0,
             })
-        self.category_aggregates.sort(key=lambda x: x["avgRisk"], reverse=True)
-
-        # Agency Aggregates Enrichment
-        enriched_agencies = []
-        for idx, a in enumerate(self.agency_aggregates):
-            ag_name = a.get("agency") or a.get("name")
-            ag_works = [w for w in self.works if w["agency"] == ag_name]
-            n = len(ag_works)
-            counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-            risk_sum = 0
-            for w in ag_works:
-                counts[w["riskTier"]] += 1
-                risk_sum += w["riskScore"]
-            avg_r = round(risk_sum / n, 1) if n > 0 else 0.0
-            tot_val = a.get("total_value", sum(w["sanctionedAmount"] for w in ag_works))
-
-            enriched_agencies.append({
-                **a,
-                "id": f"AG-{100 + idx}",
-                "name": ag_name,
-                "agency": ag_name,
-                "idx": idx,
-                "projects": n,
-                "value": tot_val,
-                "avgCost": a.get("avg_cost", int(round(tot_val / n)) if n > 0 else 0),
-                "avgRisk": avg_r,
-                "delayPct": a.get("delay_rate", 0.0),
-                "anomalyRate": a.get("anomaly_rate", 0.0),
-                "counts": counts,
-            })
-        enriched_agencies.sort(key=lambda x: x["avgRisk"], reverse=True)
-        self.agency_aggregates = enriched_agencies
-
-        # Sector Completion Efficiency
-        self.efficiency = [
-            {
-                "category": c["category"],
-                "expected": 270,
-                "actual": 270 + int(round((c["avgRisk"] / 100.0) * 160.0)),
-            }
-            for c in self.category_aggregates
-        ]
-
-        # Fund Utilization Heatmap (Top 12 States × Categories)
-        cats = [c["category"] for c in self.category_aggregates]
-        self.utilization_heatmap = []
-        for s in self.state_aggregates[:12]:
-            row = {"state": s["name"]}
-            st_works = [w for w in self.works if w["state"] == s["name"]]
-            for c in cats:
-                c_w = [w for w in st_works if w["category"] == c]
-                if c_w:
-                    tot_s = sum(w["sanctionedAmount"] for w in c_w)
-                    tot_e = sum(w["expenditure"] for w in c_w)
-                    row[c] = round((tot_e / tot_s * 100.0), 1) if tot_s > 0 else 0.0
-                else:
-                    row[c] = s["utilization"]
-            self.utilization_heatmap.append(row)
-
-        # Monthly Risk Trend and Expenditure Trend
-        months = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-        self.risk_trend = []
-        self.expenditure_trend = []
-        n_works = len(self.works)
-        for i, m in enumerate(months):
-            t = i / 11.0
-            # Data-aligned monthly rollup
-            crit = max(1, int(round((self.summary["counts"]["CRITICAL"] / 12) + np.sin(i) * 2)))
-            high = max(3, int(round((self.summary["counts"]["HIGH"] / 12) + np.cos(i) * 3)))
-            med = max(15, int(round((self.summary["counts"]["MEDIUM"] / 12) + np.sin(i / 2) * 5)))
-            low = max(100, int(round((self.summary["counts"]["LOW"] / 12) + np.cos(i / 2) * 10)))
-            sanc_cr = round((self.summary["totalSanctioned"] / 1e7 / 12) * (0.8 + t * 0.4), 1)
-            exp_cr = round(sanc_cr * (0.65 + t * 0.15), 1)
-
-            self.risk_trend.append({
-                "month": m,
-                "critical": crit,
-                "high": high,
-                "medium": med,
-                "low": low,
-                "riskValue": round(sanc_cr * (crit + high) / max(1, crit + high + med + low) * 8, 1),
-                "expenditure": exp_cr,
-            })
-            self.expenditure_trend.append({
-                "month": m,
-                "sanctioned": sanc_cr,
-                "expenditure": exp_cr,
-                "utilization": round((exp_cr / sanc_cr * 100.0), 1) if sanc_cr > 0 else 0.0,
-            })
+        self.category_aggregates.sort(key=lambda x: x["count"], reverse=True)
 
     def _build_alerts(self):
-        """Generate real-time prioritized alerts from high and critical risk works."""
-        high_risk_works = [w for w in self.works if w["riskTier"] in ["CRITICAL", "HIGH"]]
-        high_risk_works.sort(key=lambda w: w["riskScore"], reverse=True)
+        """Extract prioritized investigation alerts."""
+        alerts = []
+        critical_tenders = [t for t in self.tenders if t["riskTier"] == "CRITICAL"]
+        high_tenders = [t for t in self.tenders if t["riskTier"] == "HIGH"]
 
-        self.alerts = []
-        for idx, w in enumerate(high_risk_works[:50]):
-            sig = w["primarySignal"]
-            alert_cat = (
-                "Cost Anomaly" if "Cost" in sig
-                else "Delay" if "delay" in sig.lower()
-                else "Potential Duplicate" if "duplicate" in sig.lower()
-                else "Fund Utilization" if "expenditure" in sig.lower()
-                else "Agency Pattern" if "agency" in sig.lower()
-                else "Compliance"
-            )
-            self.alerts.append({
+        for idx, t in enumerate(critical_tenders[:25] + high_tenders[:25]):
+            sig = t["primarySignal"]
+            alerts.append({
                 "id": f"AL-{3000 + idx}",
-                "severity": w["riskTier"],
-                "category": alert_cat,
-                "title": f"Flagged {alert_cat} Signal",
-                "workId": w["id"],
-                "state": w["state"],
-                "district": w["district"],
-                "description": f"{w['id']} in {w['district']} flagged for {sig.lower()}; risk score {w['riskScore']}/100.",
-                "signal": sig,
-                "recommendedAction": w["recommendedAction"],
-                "confidence": min(96, 75 + (w["riskScore"] % 21)),
+                "severity": t["riskTier"],
+                "category": sig,
+                "title": f"Investigation Signal · {t['category']}",
+                "workId": t["id"],
+                "tenderId": t["id"],
+                "state": t["state"],
+                "district": t["district"],
+                "description": t["title"],
+                "signal": t["findings"][0]["explanation"] if t["findings"] else sig,
+                "recommendedAction": t["recommendedAction"],
+                "timestamp": t["awardDate"],
+                "confidence": t["findings"][0]["confidence"] if t["findings"] else 85,
             })
 
-    def matches_scope(self, w: Dict[str, Any], user: Optional[Any]) -> bool:
-        """Check whether a single work belongs to the user's authorized jurisdiction."""
-        if not user or getattr(user, "role", None) == "MINISTRY":
-            return True
-        role = getattr(user, "role", "")
-        if role == "STATE_AUTHORITY":
-            return w.get("state") == user.state or w.get("stateCode") == user.state
-        if role == "DISTRICT_AUTHORITY":
-            st_match = (w.get("state") == user.state or w.get("stateCode") == user.state)
-            dist_match = (w.get("district", "").strip().lower() == (user.district or "").strip().lower())
-            return st_match and dist_match
-        if role == "MP":
-            target = (user.mpName or user.constituency or "").lower()
-            w_mp = (w.get("mp") or "").lower()
-            w_const = (w.get("constituency") or "").lower()
-            if target and (target in w_mp or target in w_const):
-                return True
-            if "bengaluru urban" in w_mp or "bengaluru urban" in w_const:
-                return True
-            return False
-        return True
-
-    def filter_works_by_scope(self, user: Optional[Any]) -> List[Dict[str, Any]]:
-        """Return subset of works strictly authorized for the user."""
-        if not user or getattr(user, "role", None) == "MINISTRY":
-            return self.works
-        return [w for w in self.works if self.matches_scope(w, user)]
-
-    def get_scoped_summary(self, user: Optional[Any] = None) -> Dict[str, Any]:
-        """Compute summary strictly for the user's authorized jurisdiction."""
-        if not user or getattr(user, "role", None) == "MINISTRY":
-            return self.summary
-
-        works = self.filter_works_by_scope(user)
-        if not works:
-            return {
-                "totalWorks": 0,
-                "totalSanctioned": 0,
-                "totalExpenditure": 0,
-                "overallUtilization": 0.0,
-                "avgRiskScore": 0.0,
-                "criticalWorks": 0,
-                "highRiskWorks": 0,
-                "delayedWorks": 0,
-                "duplicateCandidates": 0,
-                "counts": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
-                "stateSummary": [],
-                "sectorEfficiency": [],
-            }
-
-        tot_sanc = sum(w["sanctionedAmount"] for w in works)
-        tot_exp = sum(w["expenditure"] for w in works)
-        counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-        crit = 0
-        high = 0
-        delayed = 0
-        dups = 0
-        risk_sum = 0
-        for w in works:
-            counts[w["riskTier"]] += 1
-            risk_sum += w["riskScore"]
-            if w["riskTier"] == "CRITICAL":
-                crit += 1
-            if w["riskTier"] == "HIGH":
-                high += 1
-            if w["delayed"]:
-                delayed += 1
-            if w["duplicateCandidate"]:
-                dups += 1
-
-        state_summary = [
-            {"state": s["name"], "code": s["code"], "highRisk": s["highRisk"], "works": s["works"], "avgRisk": s["avgRisk"]}
-            for s in self.get_scoped_states(user)[:5]
-        ]
-
-        return {
-            "totalWorks": len(works),
-            "totalSanctioned": tot_sanc,
-            "totalExpenditure": tot_exp,
-            "overallUtilization": round((tot_exp / tot_sanc * 100.0), 1) if tot_sanc > 0 else 0.0,
-            "avgRiskScore": round(risk_sum / len(works), 1) if works else 0.0,
-            "criticalWorks": crit,
-            "highRiskWorks": high,
-            "delayedWorks": delayed,
-            "duplicateCandidates": dups,
-            "counts": counts,
-            "stateSummary": state_summary,
-            "sectorEfficiency": self.efficiency,
-            "disclaimer": "Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.",
-        }
-
-    def get_scoped_states(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
-        """Return states within user's scope."""
-        if not user or getattr(user, "role", None) == "MINISTRY":
-            return self.state_aggregates
-        works = self.filter_works_by_scope(user)
-        valid_states = {w["state"] for w in works}
-        return [s for s in self.state_aggregates if s["name"] in valid_states]
-
-    def get_scoped_districts(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
-        """Return districts within user's scope."""
-        if not user or getattr(user, "role", None) == "MINISTRY":
-            return self.district_aggregates
-        works = self.filter_works_by_scope(user)
-        valid_districts = {(w["district"], w["state"]) for w in works}
-        return [d for d in self.district_aggregates if (d["district"], d["state"]) in valid_districts]
-
-    def get_scoped_agencies(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
-        """Return agencies active within user's scope."""
-        if not user or getattr(user, "role", None) == "MINISTRY":
-            return self.agency_aggregates
-        works = self.filter_works_by_scope(user)
-        valid_agencies = {w["agency"] for w in works}
-        return [a for a in self.agency_aggregates if a["agency"] in valid_agencies]
-
-    def get_scoped_categories(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
-        """Return categories active within user's scope."""
-        if not user or getattr(user, "role", None) == "MINISTRY":
-            return self.category_aggregates
-        works = self.filter_works_by_scope(user)
-        valid_cats = {w["category"] for w in works}
-        return [c for c in self.category_aggregates if c["category"] in valid_cats]
-
-    def get_scoped_alerts(self, user: Optional[Any] = None) -> List[Dict[str, Any]]:
-        """Return alerts strictly generated from user's authorized works."""
-        if not user or getattr(user, "role", None) == "MINISTRY":
-            return self.alerts
-        works = self.filter_works_by_scope(user)
-        valid_wids = {w["id"] for w in works}
-        return [a for a in self.alerts if a.get("workId") in valid_wids]
-
-    def get_scoped_filters(self, user: Optional[Any] = None) -> Dict[str, Any]:
-        """Return filter dropdown options limited to user's authorized scope."""
-        states = [{"code": s["code"], "name": s["name"]} for s in self.get_scoped_states(user)]
-        districts = sorted(list({d["district"] for d in self.get_scoped_districts(user)}))
-        categories = sorted(list({c["category"] for c in self.get_scoped_categories(user)}))
-        agencies = sorted(list({a["agency"] for a in self.get_scoped_agencies(user)}))
-        return {
-            "states": states,
-            "districts": districts,
-            "categories": categories,
-            "agencies": agencies,
-            "riskTiers": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
-        }
-
-    def get_scoped_analytics(self, user: Optional[Any] = None) -> Dict[str, Any]:
-        """Return analytics data strictly computed for user's scope."""
-        if not user or getattr(user, "role", None) == "MINISTRY":
-            return self.get_analytics()
-        states = self.get_scoped_states(user)
-        categories = self.get_scoped_categories(user)
-        agencies = self.get_scoped_agencies(user)
-        return {
-            "states": states,
-            "categories": categories,
-            "agencies": agencies,
-            "efficiency": self.efficiency,
-            "utilizationHeatmap": [u for u in self.utilization_heatmap if u["state"] in {s["name"] for s in states}],
-            "riskTrend": self.risk_trend,
-            "expenditureTrend": self.expenditure_trend,
-            "disclaimer": "Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.",
-        }
+        self.alerts = alerts
 
     def query_works(
         self,
@@ -638,159 +438,302 @@ class AnalyticsService:
         category: str = "ALL",
         agency: str = "ALL",
         risk_level: str = "ALL",
+        riskTier: str = "ALL",
         min_score: int = 0,
         max_score: int = 100,
         sort_by: str = "riskScore",
+        sortBy: str = "riskScore",
         sort_dir: str = "desc",
+        sortOrder: str = "desc",
         page: int = 1,
         page_size: int = 12,
+        pageSize: int = 12,
         user: Optional[Any] = None,
-        **kwargs,
     ) -> Dict[str, Any]:
-        """Search, filter, sort, and paginate works with strict RBAC scope enforcement."""
-        # Anti-tampering enforcement: user scope overrides external query params
-        if user and getattr(user, "role", None) == "STATE_AUTHORITY":
-            state = user.state
-        elif user and getattr(user, "role", None) == "DISTRICT_AUTHORITY":
-            state = user.state
-            district = user.district
-        """Search, filter, sort, and paginate works."""
-        if "pageSize" in kwargs:
-            page_size = kwargs["pageSize"]
-        if "sortBy" in kwargs:
-            sort_by = kwargs["sortBy"]
-        if "sortDir" in kwargs:
-            sort_dir = kwargs["sortDir"]
-        if "sortOrder" in kwargs and kwargs["sortOrder"]:
-            sort_dir = kwargs["sortOrder"]
-        if "riskLevel" in kwargs:
-            risk_level = kwargs["riskLevel"]
-        if "riskTier" in kwargs and kwargs["riskTier"]:
-            risk_level = kwargs["riskTier"]
-        if "minScore" in kwargs:
-            min_score = kwargs["minScore"]
-        if "maxScore" in kwargs:
-            max_score = kwargs["maxScore"]
+        """Filtered, sorted, and paginated query over tenders."""
+        tier = riskTier if riskTier != "ALL" else risk_level
+        sort_field = sortBy if sortBy != "riskScore" else sort_by
+        direction = sortOrder if sortOrder != "desc" else sort_dir
+        p = page
+        size = pageSize if pageSize != 12 else page_size
 
-        filtered = self.filter_works_by_scope(user)
-        q = search.strip().lower()
-        if q:
-            filtered = [
-                w for w in filtered
-                if q in w["id"].lower()
-                or q in w["description"].lower()
-                or q in w["state"].lower()
-                or q in w["district"].lower()
-                or q in w["agency"].lower()
-                or q in w["category"].lower()
-            ]
+        # RBAC scope filtering
+        scoped_tenders = self.filter_works_by_scope(user)
 
-        if state != "ALL":
-            filtered = [w for w in filtered if w["stateCode"] == state or w["state"] == state]
-        if district != "ALL":
-            filtered = [w for w in filtered if w["district"] == district]
-        if category != "ALL":
-            filtered = [w for w in filtered if w["category"] == category]
-        if agency != "ALL":
-            filtered = [w for w in filtered if w["agency"] == agency]
-        if risk_level != "ALL":
-            filtered = [w for w in filtered if w["riskTier"] == risk_level]
+        # Anti-tampering: Scoped authorities cannot override assigned jurisdiction via query parameters
+        if user and user.role in ["STATE_AUTHORITY", "DISTRICT_AUTHORITY", "MP"] and user.state:
+            state = "ALL"
+        if user and user.role in ["DISTRICT_AUTHORITY", "MP"] and user.district:
+            district = "ALL"
 
-        filtered = [w for w in filtered if min_score <= w["riskScore"] <= max_score]
+        filtered = []
+        s_term = search.lower().strip()
+
+        for t in scoped_tenders:
+            if s_term:
+                match_id = s_term in t["id"].lower()
+                match_desc = s_term in t["title"].lower()
+                match_vend = s_term in t["vendorName"].lower()
+                match_dept = s_term in t["department"].lower()
+                match_dist = s_term in t["district"].lower()
+                if not (match_id or match_desc or match_vend or match_dept or match_dist):
+                    continue
+
+            if state != "ALL":
+                if t["stateCode"] != state and t["state"].lower() != state.lower():
+                    continue
+
+            if district != "ALL" and t["district"].lower() != district.lower():
+                continue
+
+            if category != "ALL" and t["category"].lower() != category.lower():
+                continue
+
+            if agency != "ALL":
+                if t["vendorName"].lower() != agency.lower() and t["vendorId"].lower() != agency.lower():
+                    continue
+
+            if tier != "ALL" and t["riskTier"] != tier:
+                continue
+
+            if not (min_score <= t["riskScore"] <= max_score):
+                continue
+
+            filtered.append(t)
 
         # Sorting
-        reverse = sort_dir.lower() == "desc"
-        def sort_key(item):
-            val = item.get(sort_by, 0)
-            if isinstance(val, str):
-                return val.lower()
-            return val
+        rev = (direction.lower() == "desc")
+        key_map = {
+            "riskScore": lambda x: x["riskScore"],
+            "awardedValue": lambda x: x["awardedValue"],
+            "sanctionedAmount": lambda x: x["awardedValue"],
+            "estimatedValue": lambda x: x["estimatedValue"],
+            "bidderCount": lambda x: x["bidderCount"],
+            "costDeviation": lambda x: x["costDeviation"],
+            "delayDays": lambda x: x["delayDays"],
+            "tenderDate": lambda x: x["tenderDate"],
+        }
+        sort_fn = key_map.get(sort_field, lambda x: x["riskScore"])
+        filtered.sort(key=sort_fn, reverse=rev)
 
-        filtered = sorted(filtered, key=sort_key, reverse=reverse)
-
+        # Pagination
         total = len(filtered)
-        total_pages = max(1, int(np.ceil(total / page_size)))
-        start_idx = (page - 1) * page_size
-        page_rows = filtered[start_idx : start_idx + page_size]
+        start = (p - 1) * size
+        end = start + size
+        rows = filtered[start:end]
 
         return {
-            "rows": page_rows,
             "total": total,
-            "page": page,
-            "pageSize": page_size,
-            "totalPages": total_pages,
+            "page": p,
+            "pageSize": size,
+            "totalPages": math.ceil(total / size) if size > 0 else 1,
+            "rows": rows,
         }
+
+    # Backward compatibility query method name
+    query_tenders = query_works
 
     def get_work_detail(self, work_id: str, user: Optional[Any] = None) -> Optional[Dict[str, Any]]:
-        """Retrieve full investigation dossier for a work with jurisdiction access control."""
-        w = self.works_by_id.get(work_id)
-        if not w:
+        """Retrieve tender detail with peer comparison and similar candidates."""
+        t = self.tenders_by_id.get(work_id)
+        if not t:
             return None
-        if user and not self.matches_scope(w, user):
-            raise PermissionError("Access forbidden: work is outside authorized jurisdiction.")
 
-        # Similar works
-        similar = []
-        for pair in self.duplicate_candidates:
-            if pair["work_a"] == work_id:
-                other_id = pair["work_b"]
-            elif pair["work_b"] == work_id:
-                other_id = pair["work_a"]
-            else:
-                continue
-            other_w = self.works_by_id.get(other_id)
-            if other_w:
-                similar.append({
-                    **other_w,
-                    "similarity": pair["similarity_score"],
-                })
-            if len(similar) >= 3:
-                break
+        # RBAC Check
+        if user and user.role != "MINISTRY":
+            if user.role == "STATE_AUTHORITY" and user.state and t["state"] != user.state:
+                raise PermissionError("Tender is outside your authorized state jurisdiction.")
+            if user.role == "DISTRICT_AUTHORITY" and user.district and t["district"] != user.district:
+                raise PermissionError("Tender is outside your authorized district jurisdiction.")
 
-        # If fewer than 3 duplicate pairs found, augment with category peers
-        if len(similar) < 3:
-            peers = [
-                x for x in self.works
-                if x["category"] == w["category"] and x["id"] != w["id"] and x["id"] not in [s["id"] for s in similar]
-            ]
-            for p in peers[: 3 - len(similar)]:
-                cost_proximity = 1.0 - min(1.0, abs(p["sanctionedAmount"] - w["sanctionedAmount"]) / max(1, w["sanctionedAmount"]))
-                sim_pct = int(round(50 + cost_proximity * 30))
-                similar.append({**p, "similarity": sim_pct})
+        cat_peers = [
+            peer for peer in self.tenders
+            if peer["category"] == t["category"] and peer["id"] != t["id"]
+        ]
+        cat_median = int(np.median([p["awardedValue"] for p in cat_peers])) if cat_peers else t["awardedValue"]
 
-        # Historical category median
-        cat_stats = next((c for c in self.category_aggregates if c["category"] == w["category"]), None)
-        hist_median = cat_stats["medianCost"] if cat_stats else w["sanctionedAmount"]
-
-        return {
-            **w,
-            "similar": similar,
-            "financials": {
-                "estimatedCost": w["estimatedCost"],
-                "sanctionedAmount": w["sanctionedAmount"],
-                "expenditure": w["expenditure"],
-                "utilization": w["utilization"],
-                "costDeviation": w["costDeviation"],
-                "historicalMedian": hist_median,
-            },
-            "timeline": [
-                {"key": "Recommended", "date": w["sanctionDate"], "done": True},
-                {"key": "Sanctioned", "date": w["sanctionDate"], "done": True},
-                {"key": "Work Started", "date": w["sanctionDate"], "done": True},
-                {"key": "Expected Completion", "date": w["expectedCompletion"], "done": not w["delayed"], "expected": True},
-                {"key": "Actual Completion", "date": w["actualCompletion"] or w["expectedCompletion"], "done": w["status"] == "Completed", "delayed": w["delayed"]},
-            ],
+        # Financials structure
+        financials = {
+            "estimatedCost": t["estimatedValue"],
+            "sanctionedAmount": t["awardedValue"],
+            "expenditure": t["paymentAmount"],
+            "utilization": t["utilization"],
+            "costDeviation": t["costDeviation"],
+            "historicalMedian": cat_median,
         }
 
-    def get_analytics(self) -> Dict[str, Any]:
-        """Retrieve aggregated sectoral, geographic, agency, and efficiency analytics."""
+        # Similar tenders in same category/department
+        similar = []
+        for p in cat_peers[:4]:
+            similar.append({
+                "id": p["id"],
+                "workId": p["id"],
+                "description": p["title"],
+                "category": p["category"],
+                "state": p["state"],
+                "district": p["district"],
+                "sanctionedAmount": p["awardedValue"],
+                "expenditure": p["paymentAmount"],
+                "riskScore": p["riskScore"],
+                "riskTier": p["riskTier"],
+                "similarity": 82,
+            })
+
+        timeline = [
+            {"key": "Tender Notice Issued", "date": t["tenderDate"], "done": True},
+            {"key": "Bids Received & Evaluated", "date": t["awardDate"], "done": True},
+            {"key": "Contract Awarded", "date": t["awardDate"], "done": True},
+            {"key": "Target Delivery", "date": t["expectedCompletion"], "done": not t["delayed"], "expected": True},
+            {"key": "Final Delivery / Handover", "date": t["actualCompletion"] or t["expectedCompletion"], "done": t["status"] == "Completed", "delayed": t["delayed"]},
+        ]
+
         return {
-            "states": self.state_aggregates,
+            **t,
+            "financials": financials,
+            "similar": similar,
+            "timeline": timeline,
+        }
+
+    get_tender_detail = get_work_detail
+
+    def get_vendor_detail(self, vendor_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve vendor profile and recent tender history."""
+        for v in self.vendor_aggregates:
+            if v["id"] == vendor_id or v["name"] == vendor_id:
+                history = [t for t in self.tenders if t["vendorName"] == v["name"]][:20]
+                return {**v, "history": history}
+        return None
+
+    def filter_works_by_scope(self, user: Optional[Any]) -> List[Dict[str, Any]]:
+        """Filter tenders based on authenticated user jurisdiction."""
+        if not user or user.role == "MINISTRY":
+            return self.tenders
+
+        if user.role == "STATE_AUTHORITY" and user.state:
+            return [t for t in self.tenders if t["state"] == user.state]
+
+        if user.role in ["DISTRICT_AUTHORITY", "MP"] and user.district:
+            return [t for t in self.tenders if t["district"] == user.district]
+
+        return self.tenders
+
+    def get_scoped_summary(self, user: Optional[Any]) -> Dict[str, Any]:
+        """Compute summary KPIs scoped to user."""
+        scoped = self.filter_works_by_scope(user)
+        if len(scoped) == len(self.tenders):
+            return self.summary
+
+        tier_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+        for t in scoped:
+            tier_counts[t["riskTier"]] += 1
+
+        tot_awarded = sum(t["awardedValue"] for t in scoped)
+        tot_paid = sum(t["paymentAmount"] for t in scoped)
+        util = round((tot_paid / tot_awarded * 100.0), 1) if tot_awarded > 0 else 0.0
+
+        return {
+            "totalTenders": len(scoped),
+            "totalWorks": len(scoped),
+            "totalAwardValue": tot_awarded,
+            "totalSanctioned": tot_awarded,
+            "totalExpenditure": tot_paid,
+            "highPriorityCases": tier_counts["CRITICAL"] + tier_counts["HIGH"],
+            "highRiskWorks": tier_counts["CRITICAL"] + tier_counts["HIGH"],
+            "criticalWorks": tier_counts["CRITICAL"],
+            "delayedWorks": sum(1 for t in scoped if t["delayed"]),
+            "duplicateCandidates": sum(1 for t in scoped if t["duplicateCandidate"]),
+            "counts": tier_counts,
+            "utilization": util,
+            "datasetName": "Synthetic Demonstration Dataset",
+            "disclaimer": DISCLAIMER_TEXT,
+        }
+
+    def get_scoped_states(self, user: Optional[Any]) -> List[Dict[str, Any]]:
+        if not user or user.role == "MINISTRY":
+            return self.state_aggregates
+        if user.role in ["STATE_AUTHORITY", "DISTRICT_AUTHORITY"] and user.state:
+            return [s for s in self.state_aggregates if s["name"] == user.state]
+        return self.state_aggregates
+
+    def get_scoped_districts(self, user: Optional[Any]) -> List[Dict[str, Any]]:
+        if not user or user.role == "MINISTRY":
+            return self.district_aggregates
+        if user.role == "STATE_AUTHORITY" and user.state:
+            return [d for d in self.district_aggregates if d["state"] == user.state]
+        if user.role == "DISTRICT_AUTHORITY" and user.district:
+            return [d for d in self.district_aggregates if d["district"] == user.district]
+        return self.district_aggregates
+
+    def get_scoped_agencies(self, user: Optional[Any]) -> List[Dict[str, Any]]:
+        return self.vendor_aggregates
+
+    def get_scoped_categories(self, user: Optional[Any]) -> List[Dict[str, Any]]:
+        return self.category_aggregates
+
+    def get_scoped_alerts(self, user: Optional[Any]) -> List[Dict[str, Any]]:
+        if not user or user.role == "MINISTRY":
+            return self.alerts
+        scoped_ids = {t["id"] for t in self.filter_works_by_scope(user)}
+        return [a for a in self.alerts if a.get("workId") in scoped_ids or a.get("tenderId") in scoped_ids]
+
+    def get_scoped_filters(self, user: Optional[Any]) -> Dict[str, Any]:
+        scoped = self.filter_works_by_scope(user)
+        states = sorted({(t["stateCode"], t["state"]) for t in scoped}, key=lambda x: x[1])
+        districts = sorted({t["district"] for t in scoped})
+        categories = sorted({t["category"] for t in scoped})
+        vendors = sorted({t["vendorName"] for t in scoped})
+        departments = sorted({t["department"] for t in scoped})
+
+        return {
+            "states": [{"code": s[0], "name": s[1]} for s in states],
+            "districts": districts,
+            "categories": categories,
+            "agencies": vendors,
+            "vendors": vendors,
+            "departments": departments,
+            "riskTiers": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
+        }
+
+    def get_scoped_analytics(self, user: Optional[Any]) -> Dict[str, Any]:
+        scoped = self.filter_works_by_scope(user)
+        # 12-month trend simulation
+        months = ["Apr 2025", "May 2025", "Jun 2025", "Jul 2025", "Aug 2025", "Sep 2025", "Oct 2025", "Nov 2025", "Dec 2025", "Jan 2026", "Feb 2026", "Mar 2026"]
+        risk_trend = []
+        exp_trend = []
+
+        for m_idx, m in enumerate(months):
+            risk_trend.append({
+                "month": m,
+                "critical": int(round(len(scoped) * 0.025 * (0.8 + 0.4 * (m_idx % 3) / 2))),
+                "high": int(round(len(scoped) * 0.075 * (0.9 + 0.2 * (m_idx % 4) / 3))),
+                "medium": int(round(len(scoped) * 0.20 * 1.0)),
+                "low": int(round(len(scoped) * 0.70 * 1.0)),
+            })
+            exp_trend.append({
+                "month": m,
+                "sanctioned": int(round(self.summary.get("totalAwardValue", 100000000) * 0.08)),
+                "expenditure": int(round(self.summary.get("totalExpenditure", 90000000) * 0.078)),
+            })
+
+        efficiency = [
+            {"category": c["category"], "avgCost": int(c["sanctioned"] / max(1, c["count"])), "utilization": 92.4}
+            for c in self.category_aggregates[:8]
+        ]
+        heatmap = [
+            {"state": s["name"], "code": s["code"], "utilization": s["utilization"]}
+            for s in self.state_aggregates[:10]
+        ]
+
+        return {
+            "states": self.get_scoped_states(user),
             "categories": self.category_aggregates,
-            "agencies": self.agency_aggregates,
-            "efficiency": self.efficiency,
-            "utilizationHeatmap": self.utilization_heatmap,
-            "riskTrend": self.risk_trend,
-            "expenditureTrend": self.expenditure_trend,
-            "disclaimer": "Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.",
+            "departments": self.department_aggregates,
+            "agencies": self.vendor_aggregates,
+            "vendors": self.vendor_aggregates,
+            "efficiency": efficiency,
+            "utilizationHeatmap": heatmap,
+            "riskTrend": risk_trend,
+            "expenditureTrend": exp_trend,
+            "networkGraph": self.network_graph,
+            "disclaimer": DISCLAIMER_TEXT,
         }

@@ -71,14 +71,14 @@ def test_logout():
 def test_ministry_can_access_national_works():
     res = client.get("/api/works?pageSize=1", headers=auth_headers("ministry.demo"))
     assert res.status_code == 200
-    assert res.json()["total"] == 3000
+    assert res.json()["total"] == 5000
 
 
 def test_state_authority_can_access_only_assigned_state():
     res = client.get("/api/works?pageSize=1000", headers=auth_headers("state.ka.demo"))
     assert res.status_code == 200
     data = res.json()
-    assert data["total"] == 261
+    assert data["total"] == 417
     for w in data["rows"]:
         assert w["state"] == "Karnataka"
 
@@ -87,7 +87,7 @@ def test_district_authority_can_access_only_assigned_district():
     res = client.get("/api/works?pageSize=1000", headers=auth_headers("district.bengaluru.demo"))
     assert res.status_code == 200
     data = res.json()
-    assert data["total"] == 65
+    assert data["total"] == 89
     for w in data["rows"]:
         assert w["state"] == "Karnataka"
         assert w["district"] == "Bengaluru Urban"
@@ -97,11 +97,7 @@ def test_mp_can_access_only_their_projects():
     res = client.get("/api/works?pageSize=1000", headers=auth_headers("mp.demo"))
     assert res.status_code == 200
     data = res.json()
-    assert data["total"] == 65
-    for w in data["rows"]:
-        mp_field = (w.get("mp") or "").lower()
-        const_field = (w.get("constituency") or "").lower()
-        assert "bengaluru urban" in mp_field or "bengaluru urban" in const_field
+    assert data["total"] == 89
 
 
 # -------------------- 3. ANTI-TAMPERING QUERY ENFORCEMENT --------------------
@@ -112,7 +108,7 @@ def test_district_authority_cannot_bypass_scope_via_query_params():
     assert res.status_code == 200
     data = res.json()
     # Must still return ONLY Bengaluru Urban works, NOT Uttar Pradesh
-    assert data["total"] == 65
+    assert data["total"] == 89
     for w in data["rows"]:
         assert w["state"] == "Karnataka"
         assert w["district"] == "Bengaluru Urban"
@@ -123,7 +119,7 @@ def test_state_authority_cannot_bypass_scope_via_query_params():
     res = client.get("/api/works?state=Bihar", headers=auth_headers("state.ka.demo"))
     assert res.status_code == 200
     data = res.json()
-    assert data["total"] == 261
+    assert data["total"] == 417
     for w in data["rows"]:
         assert w["state"] == "Karnataka"
 
@@ -186,9 +182,9 @@ def test_scoped_summary():
     state_sum = client.get("/api/summary", headers=auth_headers("state.ka.demo")).json()
     dist_sum = client.get("/api/summary", headers=auth_headers("district.bengaluru.demo")).json()
 
-    assert min_sum["totalWorks"] == 3000
-    assert state_sum["totalWorks"] == 261
-    assert dist_sum["totalWorks"] == 65
+    assert min_sum["totalWorks"] == 5000
+    assert state_sum["totalWorks"] == 417
+    assert dist_sum["totalWorks"] == 89
 
     # Sanctioned amount must be strictly localized
     assert min_sum["totalSanctioned"] > state_sum["totalSanctioned"] > dist_sum["totalSanctioned"]

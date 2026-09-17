@@ -15,16 +15,16 @@ import { parseCsv, scoreRows, validate, SAMPLE_CSV, EXPECTED_COLUMNS } from '../
 import { downloadBlob, downloadCsv } from '../lib/exporters';
 
 const PIPELINE = [
-  'Dataset loaded (3,000 synthetic records)', 'Schema validated', 'Missing values checked', 'Duplicate records checked',
-  'Feature engineering completed', 'Anomaly engine ready', 'FastAPI REST interface connected',
+  'Procurement dataset loaded (5,000 synthetic records)', 'Schema validated', 'Missing values checked', 'Duplicate/cloned bids checked',
+  'Feature engineering completed', 'Modular ML anomaly detectors ready', 'FastAPI REST interface connected',
 ];
 
 const SCORED_COLUMNS = [
-  { key: 'id', label: 'Work ID' }, { key: 'description', label: 'Description' },
+  { key: 'id', label: 'Tender ID' }, { key: 'description', label: 'Description' },
   { key: 'state', label: 'State' }, { key: 'district', label: 'District' },
-  { key: 'category', label: 'Category' }, { key: 'sanctionedAmount', label: 'Sanctioned (INR)' },
-  { key: 'expenditure', label: 'Expenditure (INR)' }, { key: 'utilization', label: 'Utilization %' },
-  { key: 'costDeviation', label: 'Cost Deviation %' }, { key: 'delayDays', label: 'Delay (days)' },
+  { key: 'category', label: 'Category' }, { key: 'sanctionedAmount', label: 'Awarded Value (INR)' },
+  { key: 'expenditure', label: 'Disbursed (INR)' }, { key: 'utilization', label: 'Disbursement %' },
+  { key: 'costDeviation', label: 'Price Deviation %' }, { key: 'delayDays', label: 'Delay (days)' },
   { key: 'riskScore', label: 'Risk Score' }, { key: 'riskTier', label: 'Risk Tier' },
   { key: 'primarySignal', label: 'Primary Signal' },
 ];
@@ -58,7 +58,7 @@ export default function DataHealth() {
         }
         const scored = scoreRows(parsed.rows);
         setResult({ scored, headers: parsed.headers });
-        toast.success('Dataset ingested & scored', { description: `${scored.length} works re-scored by the anomaly engine.` });
+        toast.success('Dataset ingested & scored', { description: `${scored.length} tenders re-scored by the anomaly engine.` });
       } catch (err) {
         setError('Could not parse the file. Ensure it is a valid CSV.');
         setResult(null);
@@ -80,12 +80,12 @@ export default function DataHealth() {
 
   const sortedScored = useMemo(() => (result ? [...result.scored].sort((a, b) => b.riskScore - a.riskScore) : []), [result]);
 
-  const downloadSample = () => { downloadBlob('mplads-sample-template.csv', SAMPLE_CSV, 'text/csv;charset=utf-8;'); toast.success('Sample template downloaded'); };
-  const downloadScored = () => { downloadCsv('mplads-scored-results.csv', sortedScored, SCORED_COLUMNS); toast.success('Scored results exported to CSV'); };
+  const downloadSample = () => { downloadBlob('procureguard-sample-template.csv', SAMPLE_CSV, 'text/csv;charset=utf-8;'); toast.success('Sample template downloaded'); };
+  const downloadScored = () => { downloadCsv('procureguard-scored-results.csv', sortedScored, SCORED_COLUMNS); toast.success('Scored results exported to CSV'); };
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Data Health" subtitle="Pipeline readiness and status for synthetic demonstration dataset and custom ingestion." testId="data-health-page">
+      <PageHeader title="Data Health" subtitle="Pipeline readiness and integrity status for synthetic procurement dataset and custom ingestion." testId="data-health-page">
         <button onClick={downloadSample} className="inline-flex items-center gap-1.5 text-xs h-8 px-3 rounded-md border border-hairline bg-surface text-[#A0A5B0] hover:text-[#EDEDED] hover:border-[#383C45] transition-colors" data-testid="download-sample">
           <FileDown size={13} /> Sample Template
         </button>

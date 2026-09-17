@@ -60,14 +60,14 @@ export default function RiskMonitor() {
   const reset = () => { setFilters({ search: '', state: 'ALL', district: 'ALL', category: 'ALL', agency: 'ALL', riskLevel: 'ALL', minScore: 0, maxScore: 100 }); setPage(1); };
   const exportReport = async () => {
     const rows = await api.getWorksForExport({ ...filters, sortBy: sort.by, sortDir: sort.dir });
-    if (!rows.length) { toast.error('No works match the current filters.'); return; }
-    downloadCsv(`mplads-risk-report-${new Date().toISOString().slice(0, 10)}.csv`, rows, WORK_EXPORT_COLUMNS);
-    toast.success('Risk report prepared successfully.', { description: `${rows.length} works exported to CSV.` });
+    if (!rows.length) { toast.error('No tenders match the current filters.'); return; }
+    downloadCsv(`procureguard-risk-report-${new Date().toISOString().slice(0, 10)}.csv`, rows, WORK_EXPORT_COLUMNS);
+    toast.success('Risk report prepared successfully.', { description: `${rows.length} tenders exported to CSV.` });
   };
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Risk Monitor" subtitle="Prioritized works requiring monitoring or investigation." testId="risk-monitor-page">
+      <PageHeader title="Risk Monitor" subtitle="Prioritized tenders and contracts requiring monitoring or investigation." testId="risk-monitor-page">
         <button onClick={reset} className="inline-flex items-center gap-1.5 text-xs h-8 px-3 rounded-md border border-hairline bg-surface text-[#A0A5B0] hover:text-[#EDEDED] hover:border-[#383C45] transition-colors" data-testid="reset-filters">
           <RotateCcw size={13} /> Reset
         </button>
@@ -83,7 +83,7 @@ export default function RiskMonitor() {
           <Field label="Search">
             <div className="flex items-center gap-2 h-8 px-2.5 rounded-md bg-[#0D0F12] border border-hairline focus-within:border-brand min-w-[200px]">
               <Search size={13} className="text-[#737987]" />
-              <input data-testid="risk-search" value={filters.search} onChange={(e) => set('search', e.target.value)} placeholder="Work ID, description…" className="flex-1 bg-transparent text-xs text-[#EDEDED] placeholder:text-[#5C616D] outline-none" />
+              <input data-testid="risk-search" value={filters.search} onChange={(e) => set('search', e.target.value)} placeholder="Tender ID, description, vendor…" className="flex-1 bg-transparent text-xs text-[#EDEDED] placeholder:text-[#5C616D] outline-none" />
             </div>
           </Field>
           <Field label="State">
@@ -104,9 +104,9 @@ export default function RiskMonitor() {
               {opts?.categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </Field>
-          <Field label="Agency">
+          <Field label="Vendor / Agency">
             <select data-testid="filter-agency" className={selectCls} value={filters.agency} onChange={(e) => set('agency', e.target.value)}>
-              <option value="ALL">All Agencies</option>
+              <option value="ALL">All Vendors</option>
               {opts?.agencies.map((a) => <option key={a} value={a}>{a}</option>)}
             </select>
           </Field>
@@ -130,7 +130,7 @@ export default function RiskMonitor() {
             {RISK_TIERS[k].label} <span className="font-mono text-[#5C616D]">{RISK_TIERS[k].min}–{RISK_TIERS[k].max}</span>
           </div>
         ))}
-        <span className="ml-auto text-[11px] text-[#737987] font-mono">{result?.total ?? 0} works match filters</span>
+        <span className="ml-auto text-[11px] text-[#737987] font-mono">{result?.total ?? 0} tenders match filters</span>
       </div>
 
       {/* Table */}
@@ -140,12 +140,12 @@ export default function RiskMonitor() {
             <thead>
               <tr className="bg-surface-header border-y border-hairline text-[#737987] text-[11px] uppercase tracking-wider">
                 <SortHead label="Risk" col="riskTier" sort={sort} onSort={onSort} />
-                <SortHead label="Work ID" col="id" sort={sort} onSort={onSort} />
+                <SortHead label="Tender ID" col="id" sort={sort} onSort={onSort} />
                 <th className="text-left font-medium px-4 py-2.5">Description</th>
                 <SortHead label="State" col="state" sort={sort} onSort={onSort} className="hidden md:table-cell" />
                 <th className="text-left font-medium px-4 py-2.5 hidden lg:table-cell">Category</th>
-                <SortHead label="Sanctioned" col="sanctionedAmount" sort={sort} onSort={onSort} className="hidden xl:table-cell" />
-                <SortHead label="Expenditure" col="expenditure" sort={sort} onSort={onSort} className="hidden xl:table-cell" />
+                <SortHead label="Awarded" col="sanctionedAmount" sort={sort} onSort={onSort} className="hidden xl:table-cell" />
+                <SortHead label="Disbursed" col="expenditure" sort={sort} onSort={onSort} className="hidden xl:table-cell" />
                 <SortHead label="Score" col="riskScore" sort={sort} onSort={onSort} />
                 <th className="text-left font-medium px-4 py-2.5 hidden lg:table-cell">Primary Signal</th>
                 <th className="text-right font-medium px-4 py-2.5">Action</th>
@@ -153,9 +153,9 @@ export default function RiskMonitor() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10}><Loader label="Scoring works…" /></td></tr>
+                <tr><td colSpan={10}><Loader label="Scoring tenders…" /></td></tr>
               ) : result.rows.length === 0 ? (
-                <tr><td colSpan={10}><EmptyState title="No works match your filters" message="Try adjusting the risk level, state or search term." /></td></tr>
+                <tr><td colSpan={10}><EmptyState title="No tenders match your filters" message="Try adjusting the risk level, state or search term." /></td></tr>
               ) : result.rows.map((w) => (
                 <tr key={w.id} onClick={() => navigate(`/works/${w.id}`)} className="border-b border-divider hover:bg-surface-hover cursor-pointer transition-colors" data-testid={`work-row-${w.id}`}>
                   <td className="px-4 py-3"><RiskBadge tier={w.riskTier} /></td>

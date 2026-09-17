@@ -23,9 +23,9 @@ export const Wordmark = ({ collapsed = false }) => (
     {!collapsed && (
       <div className="min-w-0">
         <div className="text-[13px] font-semibold tracking-tight text-[#EDEDED] leading-tight truncate">
-          MPLADS <span className="text-brand">SENTINEL</span>
+          PROCURE<span className="text-brand">GUARD</span>
         </div>
-        <div className="text-[10px] text-[#737987] leading-tight truncate">Risk & Anomaly Intelligence</div>
+        <div className="text-[10px] text-[#737987] leading-tight truncate">Public Procurement Intelligence</div>
       </div>
     )}
   </div>

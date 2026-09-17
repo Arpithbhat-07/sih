@@ -41,23 +41,23 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
   // Role and scope resolution
   const role = user?.role || 'MINISTRY';
   let scopeLabel = 'National Scope · All India';
-  let roleTitle = 'MINISTRY (MoSPI)';
+  let roleTitle = 'CENTRAL PROCUREMENT VIGILANCE';
   let ScopeIcon = Landmark;
   let scopeColor = '#4D8CFF';
 
   if (role === 'STATE_AUTHORITY') {
     scopeLabel = `${user?.state || 'Karnataka'} · State Scope`;
-    roleTitle = 'STATE NODAL AUTHORITY';
+    roleTitle = 'STATE PROCUREMENT NODAL';
     ScopeIcon = Building;
     scopeColor = '#F3D35E';
   } else if (role === 'DISTRICT_AUTHORITY') {
     scopeLabel = `${user?.district || 'Bengaluru Urban'} · District Scope`;
-    roleTitle = 'DISTRICT AUTHORITY';
+    roleTitle = 'DISTRICT TENDER AUTHORITY';
     ScopeIcon = MapPin;
     scopeColor = '#52C47E';
   } else if (role === 'MP') {
-    scopeLabel = `${user?.constituency || 'Bengaluru Urban PC'} · My Projects`;
-    roleTitle = 'MEMBER OF PARLIAMENT';
+    scopeLabel = `${user?.constituency || 'Bengaluru Urban'} · Audit Dossier`;
+    roleTitle = 'PROCUREMENT INVESTIGATOR';
     ScopeIcon = Award;
     scopeColor = '#8B5CF6';
   }
@@ -109,7 +109,7 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
             value={q}
             onChange={(e) => { setQ(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
-            placeholder="Search work ID, district, agency..."
+            placeholder="Search tender ID, vendor, department..."
             className="flex-1 bg-transparent text-[13px] text-[#EDEDED] placeholder:text-[#5C616D] outline-none"
           />
           <kbd className="hidden lg:inline text-[10px] text-[#5C616D] font-mono border border-hairline rounded px-1">/</kbd>
@@ -117,7 +117,7 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
         {open && q && (
           <div className="absolute top-11 left-0 right-0 bg-[#0D0F12] border border-hairline rounded-md shadow-[0_4px_24px_rgba(0,0,0,0.6)] overflow-hidden z-40" data-testid="search-results">
             {results.length === 0 ? (
-              <div className="px-4 py-4 text-xs text-[#737987]">No matching works found.</div>
+              <div className="px-4 py-4 text-xs text-[#737987]">No matching tenders found.</div>
             ) : results.map((w) => {
               const t = RISK_TIERS[w.riskTier];
               return (

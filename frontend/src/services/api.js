@@ -449,6 +449,25 @@ export async function getAgencyById(id) {
   return list.find((a) => a.id === id || a.name === id) || null;
 }
 
+// ---------- Relationships / Procurement Network ----------
+export async function getRelationships() {
+  try {
+    const res = await apiClient.get('/relationships');
+    return res.data;
+  } catch (err) {
+    logFallback('/relationships', err);
+    return { nodes: [], links: [] };
+  }
+}
+
+// Procurement aliases
+export const getTenders = queryWorks;
+export const getTenderDetail = getWorkDetail;
+export const getVendors = getAgencies;
+export const getVendorById = getAgencyById;
+export const normalizeTender = normalizeWork;
+export const normalizeVendor = normalizeAgency;
+
 // ---------- Duplicates ----------
 export async function getDuplicates(limit = 50) {
   try {

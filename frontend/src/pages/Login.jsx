@@ -7,11 +7,11 @@ import { Wordmark } from '../components/common/Logo';
 const DEMO_ACCOUNTS = [
   {
     role: 'MINISTRY',
-    title: 'Ministry (MoSPI)',
+    title: 'Central Directorate',
     username: 'ministry.demo',
     scope: 'National Scope · All India',
-    worksCount: '3,000 Works',
-    description: 'National overview, cross-state anomaly alerts, macro analytics',
+    worksCount: '5,000 Tenders',
+    description: 'National overview, cross-department anomaly alerts, price deviation intelligence',
     icon: Landmark,
     accent: '#4D8CFF',
   },
@@ -20,8 +20,8 @@ const DEMO_ACCOUNTS = [
     title: 'State Authority',
     username: 'state.ka.demo',
     scope: 'Karnataka · State Scope',
-    worksCount: '261 Works',
-    description: 'State Nodal monitoring across 5 districts and state agencies',
+    worksCount: '417 Tenders',
+    description: 'State Nodal monitoring across 5 districts, local departments, and vendors',
     icon: Building,
     accent: '#F3D35E',
   },
@@ -30,18 +30,18 @@ const DEMO_ACCOUNTS = [
     title: 'District Authority',
     username: 'district.mangalore.demo',
     scope: 'Bengaluru Urban · District Scope',
-    worksCount: '65 Works',
-    description: 'District monitoring, local project verification, contractor auditing',
+    worksCount: '89 Tenders',
+    description: 'District monitoring, tender bidding audits, vendor concentration tracking',
     icon: MapPin,
     accent: '#52C47E',
   },
   {
     role: 'MP',
-    title: 'Member of Parliament',
+    title: 'Special Investigator',
     username: 'mp.demo',
-    scope: 'Bengaluru Urban PC · My Projects',
-    worksCount: '65 Works',
-    description: 'Constituency project tracking, delay signals, fund utilization',
+    scope: 'Bengaluru Urban · Investigation Unit',
+    worksCount: '89 Tenders',
+    description: 'Autonomous vigilance investigation, bidding cartel rings, and contract overruns',
     icon: Award,
     accent: '#8B5CF6',
   },
@@ -101,7 +101,7 @@ export default function Login() {
         <Wordmark />
         <div className="flex items-center gap-2 text-xs font-mono text-[#737987]">
           <Shield size={14} className="text-brand" />
-          GOVERNMENT MONITORING DEMO · SIH 2026
+          PUBLIC PROCUREMENT INTELLIGENCE · SIH 2026
         </div>
       </header>
 
@@ -113,13 +113,13 @@ export default function Login() {
             <div>
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#1A1D21] border border-[#272A30] text-[11px] font-mono text-[#A0A5B0] mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-                OFFICIAL ACCESS CONTROL · PORTAL 2.0
+                PROCUREMENT OVERSIGHT CONTROL · PORTAL 2.0
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#EDEDED] font-sans">
-                MPLADS SENTINEL
+                PROCUREGUARD
               </h1>
               <p className="text-sm text-[#A0A5B0] mt-1.5 leading-relaxed">
-                Secure Monitoring & Risk Intelligence Platform for the Members of Parliament Local Area Development Scheme.
+                AI-Powered Public Procurement Anomaly & Investigation Intelligence Platform.
               </p>
 
               {/* Security Alert Banner */}

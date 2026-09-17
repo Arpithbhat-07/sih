@@ -39,10 +39,10 @@ export default function WorkExplorer() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Work Explorer" subtitle="Browse and inspect individual MPLADS works across the programme." testId="work-explorer-page">
+      <PageHeader title="Tender Explorer" subtitle="Browse and inspect public procurement tenders, contracts, and awarded values." testId="work-explorer-page">
         <div className="flex items-center gap-2 h-8 px-2.5 rounded-md bg-[#0D0F12] border border-hairline focus-within:border-brand">
           <Search size={13} className="text-[#737987]" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search works…" className="bg-transparent text-xs text-[#EDEDED] placeholder:text-[#5C616D] outline-none w-48" data-testid="explorer-search" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search tender ID, vendor, description…" className="bg-transparent text-xs text-[#EDEDED] placeholder:text-[#5C616D] outline-none w-56" data-testid="explorer-search" />
         </div>
       </PageHeader>
 

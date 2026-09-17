@@ -21,7 +21,7 @@ import * as api from '../services/api';
 const DonutLabel = ({ total }) => (
   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
     <div className="font-mono text-2xl font-semibold text-[#EDEDED] tabular-nums">{formatIndianNumber(total)}</div>
-    <div className="text-[11px] text-[#737987]">total works</div>
+    <div className="text-[11px] text-[#737987]">total tenders</div>
   </div>
 );
 
@@ -61,28 +61,28 @@ export default function CommandCenter() {
     });
   }, []);
 
-  if (!data) return <Loader label="Loading jurisdictional overview…" />;
+  if (!data) return <Loader label="Loading procurement intelligence overview…" />;
 
   const donut = TIER_ORDER.map((k) => ({ name: RISK_TIERS[k].label, value: data.counts?.[k] || 0, color: RISK_TIERS[k].color, key: k }));
   const topStates = [...states].sort((a, b) => b.highRisk - a.highRisk).slice(0, 6);
 
   // Role-tailored headline and descriptions
-  let heroTitle = 'From thousands of records to prioritized action.';
-  let heroSubtitle = 'Sentinel continuously analyzes project, financial and execution signals to identify where attention is needed most.';
+  let heroTitle = 'From thousands of tenders to prioritized action.';
+  let heroSubtitle = 'ProcureGuard continuously analyzes bid pricing, bidder participation, vendor concentration, and contract execution signals to identify where attention is needed most.';
   let scopeBadgeText = 'National Scope · All India';
 
   if (role === 'STATE_AUTHORITY') {
-    heroTitle = `State Command Center · ${user?.state || 'Karnataka'}`;
-    heroSubtitle = `Monitoring ${data.totalWorks} sanctioned public works across ${user?.state || 'Karnataka'}'s implementing agencies and districts.`;
+    heroTitle = `State Procurement Center · ${user?.state || 'Karnataka'}`;
+    heroSubtitle = `Monitoring ${data.totalWorks} public tenders across ${user?.state || 'Karnataka'}'s departments and districts.`;
     scopeBadgeText = `${user?.state || 'Karnataka'} · State Jurisdiction`;
   } else if (role === 'DISTRICT_AUTHORITY') {
-    heroTitle = `District Monitoring Center · ${user?.district || 'Bengaluru Urban'}`;
-    heroSubtitle = `Localized risk assessment for ${data.totalWorks} works within ${user?.district || 'Bengaluru Urban'} district jurisdiction.`;
+    heroTitle = `District Tender Center · ${user?.district || 'Bengaluru Urban'}`;
+    heroSubtitle = `Localized risk assessment for ${data.totalWorks} tenders within ${user?.district || 'Bengaluru Urban'} district jurisdiction.`;
     scopeBadgeText = `${user?.district || 'Bengaluru Urban'} · District Scope`;
   } else if (role === 'MP') {
-    heroTitle = `My MPLADS Works · ${user?.constituency || 'Bengaluru Urban PC'}`;
-    heroSubtitle = `Constituency dashboard tracking portfolio health, delay alerts, and fund utilization for ${data.totalWorks} recommended works.`;
-    scopeBadgeText = `${user?.constituency || 'Bengaluru Urban PC'} · My Projects`;
+    heroTitle = `Procurement Audit Dossier · ${user?.constituency || 'Bengaluru Urban'}`;
+    heroSubtitle = `Vigilance review tracking ${data.totalWorks} procurement tenders, vendor concentration, and contract execution.`;
+    scopeBadgeText = `${user?.constituency || 'Bengaluru Urban'} · Investigation Unit`;
   }
 
   return (
@@ -98,24 +98,24 @@ export default function CommandCenter() {
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[#EDEDED]">{heroTitle}</h1>
             <p className="text-sm text-[#A0A5B0] mt-2 max-w-2xl">
               {heroSubtitle}
-              <span className="text-[#EDEDED]"> We don't replace investigation, we tell authorities where to look first.</span>
+              <span className="text-[#EDEDED]"> We prioritize cases for authorized human review; our signals are decision-support, not judicial findings.</span>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <FilterPill value={fy} onChange={setFy} options={[FISCAL_YEAR, 'FY 2024–25', 'FY 2023–24']} />
             <FilterPill value={stateF} onChange={setStateF} options={['All States', ...states.map((s) => s.name)]} />
-            <FilterPill value={catF} onChange={setCatF} options={['All Categories', 'Education', 'Health', 'Road Construction', 'Water & Sanitation']} />
+            <FilterPill value={catF} onChange={setCatF} options={['All Categories', 'Roads & Bridges', 'Healthcare & Medical Supplies', 'IT & Digital Infrastructure', 'School Infrastructure', 'Water Supply & Sanitation']} />
           </div>
         </div>
       </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-        <KpiCard testId="kpi-total-works" label="Total Works" value={data.totalWorks} icon={Layers} trend={4.2} index={0} onClick={() => navigate('/works')} />
-        <KpiCard testId="kpi-total-sanctioned" label="Total Sanctioned" value={data.totalSanctioned / 1e7} prefix="₹" suffix=" Cr" decimals={0} icon={IndianRupee} trend={2.8} accent="#8B5CF6" index={1} />
-        <KpiCard testId="kpi-high-risk" label="High Risk Works" value={data.highRiskWorks} icon={ShieldAlert} trend={12.4} accent="#F15252" index={2} onClick={() => navigate('/risk?riskLevel=HIGH')} />
-        <KpiCard testId="kpi-delayed" label="Delayed Works" value={data.delayedWorks} icon={Clock} trend={6.1} accent="#F59638" index={3} onClick={() => navigate('/risk')} />
-        <KpiCard testId="kpi-duplicates" label="Duplicate Candidates" value={data.duplicateCandidates} icon={Copy} trend={-3.4} accent="#F3D35E" index={4} />
+        <KpiCard testId="kpi-total-works" label="Total Tenders" value={data.totalWorks} icon={Layers} trend={4.2} index={0} onClick={() => navigate('/works')} />
+        <KpiCard testId="kpi-total-sanctioned" label="Total Award Value" value={data.totalSanctioned / 1e7} prefix="₹" suffix=" Cr" decimals={0} icon={IndianRupee} trend={2.8} accent="#8B5CF6" index={1} />
+        <KpiCard testId="kpi-high-risk" label="High-Priority Cases" value={data.highRiskWorks} icon={ShieldAlert} trend={12.4} accent="#F15252" index={2} onClick={() => navigate('/risk?riskLevel=HIGH')} />
+        <KpiCard testId="kpi-delayed" label="Delayed Contracts" value={data.delayedWorks} icon={Clock} trend={6.1} accent="#F59638" index={3} onClick={() => navigate('/risk')} />
+        <KpiCard testId="kpi-duplicates" label="Network / Cloned Flags" value={data.duplicateCandidates} icon={Copy} trend={-3.4} accent="#F3D35E" index={4} onClick={() => navigate('/relationships')} />
       </div>
 
       {/* Risk overview */}
@@ -273,15 +273,15 @@ export default function CommandCenter() {
       {/* Priority alerts */}
       <Panel>
         <PanelHeader
-          title="Priority Alerts"
-          subtitle="Highest-priority works flagged for review"
+          title="Priority Tender Alerts"
+          subtitle="Highest-priority tenders flagged for review"
           action={<button onClick={() => navigate('/alerts')} className="text-xs text-brand hover:text-white transition-colors flex items-center gap-1">View all <ArrowRight size={13} /></button>}
         />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-header border-y border-hairline text-[#737987] text-[11px] uppercase tracking-wider">
-                <th className="text-left font-medium px-4 py-2.5">Work ID</th>
+                <th className="text-left font-medium px-4 py-2.5">Tender ID</th>
                 <th className="text-left font-medium px-4 py-2.5">Location</th>
                 <th className="text-left font-medium px-4 py-2.5 hidden md:table-cell">Category</th>
                 <th className="text-left font-medium px-4 py-2.5">Risk</th>
@@ -316,16 +316,16 @@ export default function CommandCenter() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-sm font-semibold text-[#EDEDED]">Sentinel AI Insight</h3>
+                <h3 className="text-sm font-semibold text-[#EDEDED]">ProcureGuard AI Insight</h3>
                 <span className="text-[10px] font-mono text-ai px-1.5 py-0.5 rounded bg-ai/10 border border-ai/20">GENERATED</span>
               </div>
               <p className="text-[13px] text-[#C9CDD6] leading-relaxed max-w-3xl">
-                Risk concentration has increased in 3 districts over the last quarter. The strongest contributing signals are
-                abnormal project costs, extended completion periods and high agency-level concentration. Prioritized review
-                is recommended for the {data.counts.CRITICAL} critical works.
+                Anomaly signals indicate clustering in 3 regional sectors over the recent bidding cycle. Primary contributing factors include
+                abnormal price bids, single-bidder participation rates, and vendor award concentration. Prioritized review
+                is recommended for the {data.counts.CRITICAL} critical tenders.
               </p>
               <button onClick={() => navigate('/ai')} className="mt-3 text-xs text-ai hover:text-[#a78bfa] transition-colors inline-flex items-center gap-1">
-                View Analysis <ArrowRight size={13} />
+                Ask ProcureGuard AI <ArrowRight size={13} />
               </button>
             </div>
           </div>

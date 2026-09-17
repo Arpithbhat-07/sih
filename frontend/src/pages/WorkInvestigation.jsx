@@ -22,12 +22,12 @@ import { addToQueue, isQueued } from '../services/investigationStore';
 import { generateBriefPdf } from '../lib/exporters';
 
 const CHECKLIST = [
-  'Verify technical estimate',
-  'Compare BOQ and sanctioned estimate',
-  'Review payment history',
-  'Verify physical progress',
-  'Compare similar works',
-  'Review implementing agency history',
+  'Verify bidder pre-qualification and registration documents',
+  'Compare Bill of Quantities (BOQ) against category median rates',
+  'Inspect vendor director linkages, registered addresses, and phone overlap',
+  'Review disbursement vouchers against verified milestone certificates',
+  'Cross-check similar bids across other regional departments',
+  'Review vendor win rate history and department concentration ratio',
 ];
 
 const sevColor = (s) => (RISK_TIERS[s] || RISK_TIERS.LOW).color;
@@ -44,13 +44,13 @@ export default function WorkInvestigation() {
     api.getWorkDetail(id).then((w) => { setWork(w); if (w) setQueued(isQueued(w.id)); });
   }, [id]);
 
-  if (work === undefined) return <Loader label="Assembling investigation dossier…" />;
-  if (!work) return <EmptyState icon={AlertTriangle} title="Work not found" message={`No record for ${id} in the current dataset.`} />;
+  if (work === undefined) return <Loader label="Assembling tender investigation dossier…" />;
+  if (!work) return <EmptyState icon={AlertTriangle} title="Tender not found" message={`No record for ${id} in the current procurement dataset.`} />;
 
   const t = RISK_TIERS[work.riskTier];
   const compare = [
-    { name: 'Historical median', value: work.financials.historicalMedian, color: '#2A3550' },
-    { name: 'This project', value: work.financials.expenditure, color: t.color },
+    { name: 'Category median', value: work.financials.historicalMedian, color: '#2A3550' },
+    { name: 'This tender', value: work.financials.expenditure, color: t.color },
   ];
   const addQueue = () => {
     const { added } = addToQueue(work);
@@ -67,7 +67,7 @@ export default function WorkInvestigation() {
 
   return (
     <div className="space-y-6" data-testid="work-investigation-page">
-      <Crumbs items={[{ label: 'Risk Monitor', to: '/risk' }, { label: 'Work Investigation' }, { label: work.id }]} />
+      <Crumbs items={[{ label: 'Risk Monitor', to: '/risk' }, { label: 'Tender Investigation' }, { label: work.id }]} />
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -76,7 +76,7 @@ export default function WorkInvestigation() {
             <ArrowLeft size={16} />
           </button>
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-[#737987]">Work Investigation</div>
+            <div className="text-[11px] uppercase tracking-wider text-[#737987]">Tender Dossier & Investigation</div>
             <div className="flex items-center gap-3 mt-0.5">
               <h1 className="text-2xl font-semibold tracking-tight font-mono text-[#EDEDED]">{work.id}</h1>
               <RiskBadge tier={work.riskTier} dot />
@@ -98,11 +98,11 @@ export default function WorkInvestigation() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Panel className="lg:col-span-4 flex flex-col items-center justify-center p-6">
           <RadialScore score={work.riskScore} size={200} />
-          <p className="text-xs text-[#A0A5B0] text-center mt-4 max-w-[220px]">High priority — detailed review recommended before final closure.</p>
+          <p className="text-xs text-[#A0A5B0] text-center mt-4 max-w-[220px]">Investigation priority — authorized human review recommended before disbursement clearance.</p>
         </Panel>
 
         <Panel className="lg:col-span-8">
-          <PanelHeader title="Risk Score Breakdown" subtitle="Component contribution to the composite score" />
+          <PanelHeader title="Risk Score Breakdown" subtitle="Component contribution to the composite priority score" />
           <div className="p-5 space-y-4">
             {work.breakdown.map((b, i) => (
               <motion.div key={b.key} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
@@ -123,33 +123,33 @@ export default function WorkInvestigation() {
       {/* Work info + Financial */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Panel className="lg:col-span-5">
-          <PanelHeader title="Work Information" subtitle="Investigation dossier" />
+          <PanelHeader title="Tender Details" subtitle="Procurement investigation dossier" />
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
-            <Info2 icon={FileText} label="Work Description" value={work.description} full />
+            <Info2 icon={FileText} label="Tender Description" value={work.description} full />
             <Info2 icon={MapPin} label="State" value={work.state} />
             <Info2 icon={MapPin} label="District" value={work.district} />
-            <Info2 icon={MapPin} label="MP Constituency" value={work.constituency} />
-            <Info2 icon={Building2} label="Implementing Agency" value={work.agency} />
-            <Info2 icon={FileText} label="Work Category" value={work.category} />
-            <Info2 icon={Calendar} label="Sanction Date" value={formatDate(work.sanctionDate)} />
-            <Info2 icon={Calendar} label="Expected Completion" value={formatDate(work.expectedCompletion)} />
-            <Info2 icon={Calendar} label="Actual Completion" value={work.actualCompletion ? formatDate(work.actualCompletion) : 'Ongoing'} />
+            <Info2 icon={MapPin} label="Procurement Dept / Unit" value={work.constituency} />
+            <Info2 icon={Building2} label="Awarded Vendor" value={work.agency} />
+            <Info2 icon={FileText} label="Category" value={work.category} />
+            <Info2 icon={Calendar} label="Sanction / Issue Date" value={formatDate(work.sanctionDate)} />
+            <Info2 icon={Calendar} label="Target Completion" value={formatDate(work.expectedCompletion)} />
+            <Info2 icon={Calendar} label="Actual Completion" value={work.actualCompletion ? formatDate(work.actualCompletion) : 'In Progress'} />
             <Info2 icon={Clock} label="Status" value={work.status} />
           </div>
         </Panel>
 
         <Panel className="lg:col-span-7">
-          <PanelHeader title="Financial Analysis" subtitle="Cost, sanction and expenditure comparison" />
+          <PanelHeader title="Financial & Price Analysis" subtitle="Estimated vs awarded vs disbursed comparison" />
           <div className="p-5">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
               <Metric label="Estimated Cost" value={formatINR(work.financials.estimatedCost)} />
-              <Metric label="Sanctioned Amount" value={formatINR(work.financials.sanctionedAmount)} />
-              <Metric label="Expenditure" value={formatINR(work.financials.expenditure)} />
-              <Metric label="Utilization" value={formatPct(work.financials.utilization, 0)} accent={work.financials.utilization > 100 ? '#F15252' : '#52C47E'} />
-              <Metric label="Cost Deviation" value={formatSignedPct(work.financials.costDeviation, 0)} accent={work.financials.costDeviation > 40 ? '#F15252' : '#F59638'} />
-              <Metric label="Historical Median" value={formatINR(work.financials.historicalMedian)} />
+              <Metric label="Awarded Value" value={formatINR(work.financials.sanctionedAmount)} />
+              <Metric label="Disbursed Amount" value={formatINR(work.financials.expenditure)} />
+              <Metric label="Disbursement Rate" value={formatPct(work.financials.utilization, 0)} accent={work.financials.utilization > 100 ? '#F15252' : '#52C47E'} />
+              <Metric label="Price Deviation" value={formatSignedPct(work.financials.costDeviation, 0)} accent={work.financials.costDeviation > 40 ? '#F15252' : '#F59638'} />
+              <Metric label="Category Median" value={formatINR(work.financials.historicalMedian)} />
             </div>
-            <div className="text-[11px] uppercase tracking-wider text-[#737987] mb-2">Similar Projects vs This Project</div>
+            <div className="text-[11px] uppercase tracking-wider text-[#737987] mb-2">Category Median vs This Tender</div>
             <div className="h-[150px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={compare} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
@@ -195,7 +195,7 @@ export default function WorkInvestigation() {
 
       {/* AI Findings */}
       <Panel>
-        <PanelHeader title="AI Findings" subtitle="Analytical signals with supporting evidence and confidence" action={<span className="text-[10px] font-mono text-ai px-1.5 py-0.5 rounded bg-ai/10 border border-ai/20">SENTINEL ENGINE</span>} />
+        <PanelHeader title="AI Findings" subtitle="Analytical signals with supporting evidence and confidence" action={<span className="text-[10px] font-mono text-ai px-1.5 py-0.5 rounded bg-ai/10 border border-ai/20">PROCUREGUARD ENGINE</span>} />
         <div className="p-5 grid grid-cols-1 gap-3">
           {work.findings.map((f, i) => (
             <motion.div key={f.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
@@ -221,9 +221,9 @@ export default function WorkInvestigation() {
         </div>
       </Panel>
 
-      {/* Duplicates */}
+      {/* Duplicates / Clustered */}
       <Panel>
-        <PanelHeader title="Potential Duplicate / Similar Works" subtitle="Works sharing strong attribute similarity" />
+        <PanelHeader title="Potential Duplicate / Clustered Tenders" subtitle="Tenders sharing high text or attribute similarity with this tender" />
         <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
           {work.similar.map((s) => (
             <div key={s.id} className="rounded-md border border-divider bg-[#0D0F12] p-4 flex flex-col">

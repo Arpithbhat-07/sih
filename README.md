@@ -1,166 +1,194 @@
-# MPLADS Sentinel
+# PROCUREGUARD
 
-> **AI-Powered Multi-Signal Anomaly Detection & Expenditure Monitoring Platform for the Members of Parliament Local Area Development Scheme (MPLADS)**  
+> **AI-Powered Public Procurement Anomaly & Investigation Intelligence Platform**  
 > *Developed for the Smart India Hackathon (SIH)*
 
 ---
 
 ## 🏛️ Executive Summary
 
-**MPLADS Sentinel** is an enterprise-grade public infrastructure expenditure surveillance platform designed for district authorities, nodal ministries, and audit teams. By applying statistical baseline models, NLP semantic embeddings, and multi-modal risk aggregation across 3,000 public work projects, MPLADS Sentinel identifies cost deviations, schedule slippages, duplicate work proposals, and agency portfolio concentrations with full explainability and mathematical rigor.
+**ProcureGuard** is an enterprise-grade public procurement intelligence and audit surveillance platform designed for central vigilance directorates, state procurement nodal agencies, district tender authorities, and specialized investigation teams.
+
+Government procurement generates large volumes of tenders, bids, vendors, contracts, and payments. While the majority of transactions are legitimate, unusual bidding behavior, repeated awards, unexplained price deviations, or covert relationships between participants can be difficult to identify through manual review. The core challenge is not simply finding transactions that look unusual, but helping investigators distinguish meaningful patterns from legitimate market variation.
+
+ProcureGuard follows a strict **"DETECT → EXPLAIN → PRIORITIZE → INVESTIGATE"** philosophy:
+* It generates **investigation priority scores (0–100)** to help authorities prioritize limited audit bandwidth.
+* It provides **transparent analytical evidence** (price deviations, bidder counts, win rates, entity graph links) for every flagged case.
+* It **never accuses entities of corruption or labels transactions as fraud** — anomaly signals are decision-support indicators for authorized human review.
 
 ---
 
-## ⚡ Key Highlights & System Architecture
+## ⚡ System Architecture
 
 ```text
        ┌─────────────────────────────────────────────────────────┐
-       │                   MPLADS Sentinel UI                    │
-       │     (React CRA · Radix UI · Tailwind · Framer Motion)    │
+       │                   ProcureGuard UI                       │
+       │   (React 19 · Tailwind · Recharts · Framer Motion · SVG)│
        └────────────────────────────┬────────────────────────────┘
-                                    │ REST APIs
+                                    │ REST APIs + Bearer RBAC
                                     ▼
        ┌─────────────────────────────────────────────────────────┐
        │                 FastAPI Backend Server                  │
-       │           (Sub-10ms Latency · CORS Guarded)             │
+       │    (Sub-15ms Latency · Anti-Tampering Scope Enforcement)│
        └────────────────────────────┬────────────────────────────┘
-                                    │ Unified Ingestion Pipeline
+                                    │ Preprocessing & Dual Mapping
                                     ▼
        ┌─────────────────────────────────────────────────────────┐
-       │               Analytics & ML Engine Layer               │
-       │  ┌───────────────────────┐   ┌───────────────────────┐  │
-       │  │  Cost Anomaly Engine  │   │     Delay Detector    │  │
-       │  │    (MAD + IsoForest)  │   │  (Schedule Slippage)  │  │
-       │  └───────────────────────┘   └───────────────────────┘  │
-       │  ┌───────────────────────┐   ┌───────────────────────┐  │
-       │  │   Duplicate Detector  │   │ Agency Anomaly Engine │  │
-       │  │   (TF-IDF + Cosine)   │   │  (Portfolio Outliers) │  │
-       │  └───────────────────────┘   └───────────────────────┘  │
-       │  ┌───────────────────────────────────────────────────┐  │
-       │  │       Composite 0–100 Risk Engine + Synergy       │  │
-       │  └───────────────────────────────────────────────────┘  │
+       │               Modular ML Analytics Pipeline             │
+       │  ┌────────────────────────┐   ┌───────────────────────┐ │
+       │  │  Price Anomaly Engine  │   │  Bid Anomaly Engine   │ │
+       │  │   (MAD + IsoForest)    │   │  (Low Participation) │ │
+       │  │       (0–25 pts)       │   │      (0–20 pts)       │ │
+       │  └────────────────────────┘   └───────────────────────┘ │
+       │  ┌────────────────────────┐   ┌───────────────────────┐ │
+       │  │  Vendor Anomaly Engine │   │ Repeated Award Engine │ │
+       │  │  (Win Rate & Profiling)│   │ (Market Concentration)│ │
+       │  │       (0–20 pts)       │   │      (0–15 pts)       │ │
+       │  └────────────────────────┘   └───────────────────────┘ │
+       │  ┌────────────────────────┐   ┌───────────────────────┐ │
+       │  │  Relationship Graph    │   │ Contract Anomaly Eng  │ │
+       │  │ (Entity Link Analysis) │   │  (Overrun & Delays)   │ │
+       │  │       (0–15 pts)       │   │       (0–5 pts)       │ │
+       │  └────────────────────────┘   └───────────────────────┘ │
+       │  ┌───────────────────────────────────────────────────┐ │
+       │  │   Composite 0–100 Priority Risk Engine + Synergy   │ │
+       │  └───────────────────────────────────────────────────┘ │
        └────────────────────────────┬────────────────────────────┘
-                                    │ Indexed Records
+                                    │ Indexed Records & Graph Nodes
                                     ▼
        ┌─────────────────────────────────────────────────────────┐
-       │               3,000 Synthetic MPLADS Works              │
-       │       20 States · 89 Districts · 20 Agencies · 8 Sectors │
+       │         5,000 Deterministic Procurement Records         │
+       │  10 Sectors · 20 States · 89 Districts · 50 Depts · 80 Vendors│
        └─────────────────────────────────────────────────────────┘
 ```
 
-### 1. Multi-Modal Analytical Engines
-* **Cost Anomaly Detector**: Employs Median Absolute Deviation (MAD) category baselines combined with an Isolation Forest ensemble to detect expenditure escalations exceeding category medians.
-* **Timeline Delay Engine**: Computes schedule slippage against baseline timelines, identifying stalled and delayed projects.
-* **Duplicate Candidate Screener**: Sector-blocked TF-IDF n-grams (1–2 grams) with multi-attribute cosine similarity across descriptions, geo-proximity, and budgetary windows to detect duplicate proposals without manual comparison.
-* **Agency Concentration Engine**: Evaluates implementing agencies on capacity constraints, delay frequency, and cost anomaly ratios relative to the national benchmark.
-* **Composite Risk Scoring (0–100)**: Multi-factor risk engine aggregating cost (35), delay (25), duplicate similarity (20), agency risk (15), and compliance (5) with compound synergy boosts for concurrent multi-signal anomalies.
+---
 
-### 2. Sentinel AI Grounded Intelligence Layer
-* **Grounded Analytical Queries**: Supports work investigations, state rankings, duplicate candidate analysis, agency comparisons, and prioritized investigation protocols.
-* **100% Offline & Deterministic**: Zero external LLM / API key dependencies; pluggable architecture ready for future LLM integration.
-* **Quick Shortcut**: "Investigate Highest Risk" single-click inspection dossier for top critical work `W-11261`.
+## 🧠 Modular Machine Learning & Analytics Detectors
 
-### 3. Responsible AI & Neutrality
-* Built strictly to adhere to the Ministry of Statistics and Programme Implementation (MoSPI) neutral terminology guidelines.
-* Zero accusatory language (`fraud`, `corruption`, `guilty`, `scam` are prohibited).
-* Statutory disclaimer on all exports and analytical views:
-  > *"Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation."*
+ProcureGuard features six independent, mathematically grounded anomaly detection engines located in `backend/ml/`:
+
+| Engine | File | Method | Max Weight | Primary Analytical Signal |
+|---|---|---|:---:|---|
+| **Price Anomaly** | `price_anomaly.py` | Category Median Absolute Deviation (MAD) Z-score + Vectorized Isolation Forest ensemble | **25 pts** | Unexplained pricing outlier vs historical peer tenders |
+| **Bid Participation** | `bid_anomaly.py` | Single-bidder penalty (1.0x) and 2-bidder low competition penalty (0.6x) | **20 pts** | Subdued competition / restricted bidding pool |
+| **Vendor Profiling** | `vendor_anomaly.py` | Empirical win-rate vs benchmark (3.0x threshold) + vendor historical anomaly rate | **20 pts** | Disproportionate vendor success rate & risk history |
+| **Repeated Award** | `repeated_award.py` | Department & Category Herfindahl-Hirschman / award concentration ratio | **15 pts** | Vendor capture of specific department tender portfolios |
+| **Relationship Graph** | `relationship_anomaly.py` | Multi-entity bipartite network graph detecting shared directors, phones, addresses | **15 pts** | Covert corporate linkages between competing bidders |
+| **Contract Execution** | `contract_anomaly.py` | Payment disbursement overruns (>115% of award) and execution schedule delays | **5 pts** | Post-award financial leakage & timeline slippage |
+
+### Composite Risk Scoring & Synergy Rules
+The total score is normalized to **0–100**:
+`Base Score = S_price + S_bid + S_vendor + S_repeat + S_rel + S_contract`
+
+* **Synergy Boost (+8 pts)**: Triggered when **concurrent** high price deviation (>= 15 pts) and single/low bidder participation (>= 15 pts) are detected.
+* **Synergy Boost (+7 pts)**: Triggered when **concurrent** high vendor concentration (>= 12 pts) and relationship link flags (>= 10 pts) are detected.
+* **Tiers**:
+  * `CRITICAL` (80–100): Immediate priority review required before disbursement.
+  * `HIGH` (60–79): Significant multi-signal anomalies flagged.
+  * `MEDIUM` (40–59): Moderate deviations requiring routine oversight.
+  * `LOW` (0–39): Transactions within expected statistical patterns.
 
 ---
 
-## 📊 Performance & Verification Benchmarks
+## 🕸️ Procurement Relationship Network Graph
 
-* **Pipeline Ingestion**: Full multi-modal processing of 3,000 projects in **1.18 seconds**.
-* **API Response Time**: Sub-10ms response latencies across all 12 endpoints.
-* **Automated Test Coverage**:
-  * **27 / 27** Python backend tests passing (`pytest`).
-  * **16 / 16** Frontend Jest integration tests passing (`craco test`).
-  * **13 / 13** Playwright end-to-end browser tests passing.
+The interactive network graph (`/relationships`) maps relationships across entities:
+* **Node Types**: Vendors (blue), Departments (amber), Directors/Owners (purple), and Tenders (emerald).
+* **Link Types**: Awarded contracts, bidding participation, directorships, shared phone numbers, and shared registered office addresses.
+* **Visual Clustering**: Force-directed layout identifies tightly connected bidder clusters, potential shell companies, and captive department relationships.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🤖 ProcureGuard AI Grounded Intelligence Layer
+
+Located at `/ai`, ProcureGuard AI is a deterministic analytical assistant:
+* **Intent Detection**: Automatically parses tender IDs (`TND-2026-01842`), vendor IDs (`V-1042`), department names, states, and analytical questions.
+* **Grounded Analytical Context**: Queries live FastAPI endpoints (`/api/tenders/{id}`, `/api/relationships`, `/api/summary`) to retrieve verified facts.
+* **Structured Response**: Outputs an executive summary, itemized evidence table, and prioritized actionable checklist for field auditors.
+* **Zero Hallucination**: Fully deterministic and offline-first; never invents data or makes judicial accusations.
+
+---
+
+## 🔒 Role-Based Access Control (RBAC) & Anti-Tampering
+
+All queries are authenticated via PBKDF2-SHA256 password hashing and URL-safe HMAC-SHA256 bearer tokens. Jurisdictional boundaries are strictly enforced on the server:
+
+| Role | Demo User | Scope | Assigned Jurisdiction | Accessible Records |
+|---|---|---|---|:---:|
+| **Central Directorate** | `ministry.demo` | `NATIONAL` | All India | 5,000 Tenders |
+| **State Authority** | `state.ka.demo` | `STATE` | Karnataka | 417 Tenders |
+| **District Authority** | `district.mangalore.demo` | `DISTRICT` | Bengaluru Urban | 89 Tenders |
+| **Special Investigator** | `mp.demo` | `AUDITOR` | Bengaluru Urban (Special Unit) | 89 Tenders |
+
+* **Anti-Tampering Query Enforcement**: When a scoped user queries `/api/tenders?state=Uttar+Pradesh`, the server overrides the user parameter with their authenticated scope (`Karnataka`), preventing horizontal privilege escalation.
+
+---
+
+## 📊 Synthetic Demonstration Dataset Specification
+
+* **Filename**: `backend/data/procurement_synthetic.csv`
+* **Random Seed**: `20260917` (100% deterministic generation via `generate_procurement_data.py`)
+* **Volume**: 5,000 procurement tenders across 20 Indian states and 89 districts.
+* **Sectors**:
+  1. Roads & Bridges
+  2. Healthcare & Medical Supplies
+  3. School Infrastructure
+  4. Water Supply & Sanitation
+  5. Rural Electrification & Solar
+  6. IT & Digital Infrastructure
+  7. Urban Development & Smart Cities
+  8. Agriculture & Irrigation Works
+  9. Public Housing & Buildings
+  10. Environmental & Waste Management
+* **Structured Scenarios**: Includes dedicated anchor test cases, e.g. **`TND-2026-01842`** (Risk Score: 84, Critical Tier, Price Anomaly + Low Bidder participation, awarded to `V-1042 Enterprise Logistics`).
+
+---
+
+## 🚀 Quickstart Guide
 
 ### Prerequisites
-* Python 3.11+
-* Node.js 18+ and Yarn / npm
+* Python 3.10+
+* Node.js 18+ and npm
+* Git
 
-### 1. Backend Setup
+### 1. Clone & Set Up Backend
 ```bash
-# Navigate to repository root
-cd sih
+git clone https://github.com/Arpithbhat-07/sih.git
+cd sih/backend
 
 # Install Python dependencies
-pip install -r backend/requirements.txt
+pip install -r requirements.txt
 
-# Launch FastAPI backend server (Port 8000)
-python -m uvicorn backend.server:app --port 8000 --reload
+# Start FastAPI server (runs on http://127.0.0.1:8000)
+uvicorn server:app --reload --port 8000
 ```
-API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)  
-Health Endpoint: [http://localhost:8000/api/health](http://localhost:8000/api/health)
 
-### 2. Frontend Setup
+### 2. Set Up Frontend
 ```bash
-# Navigate to frontend directory
-cd frontend
+cd ../frontend
 
-# Install Node dependencies
-yarn install
+# Install dependencies
+npm install
 
-# Launch React development server (Port 3000)
-yarn start
+# Start React development server (runs on http://localhost:3000)
+npm start
 ```
-Frontend Application: [http://localhost:3000](http://localhost:3000)
 
----
+### 3. Run Automated Tests
+```bash
+cd ../backend
 
-## 📁 Repository Structure
-
-```text
-├── backend/
-│   ├── data/
-│   │   └── mplads_synthetic.csv     # 3,000 synthetic MPLADS work records
-│   ├── ml/
-│   │   ├── cost_anomaly.py          # MAD + Isolation Forest cost detector
-│   │   ├── delay_detection.py       # Timeline schedule slippage detector
-│   │   ├── duplicate_detection.py   # TF-IDF + Cosine similarity engine
-│   │   ├── agency_anomaly.py        # Agency portfolio outlier scoring
-│   │   ├── risk_engine.py           # 0–100 composite risk scoring engine
-│   │   └── preprocessing.py         # Ingestion, validation & normalization
-│   ├── services/
-│   │   └── analytics.py             # Unified high-performance analytics service
-│   ├── requirements.txt             # Backend Python dependencies
-│   └── server.py                    # FastAPI REST API endpoints & security guards
-├── frontend/
-│   ├── public/                      # Static assets & index.html
-│   ├── src/
-│   │   ├── components/              # UI components (Header, Nav, MetricCards)
-│   │   ├── pages/
-│   │   │   ├── CommandCenter.jsx    # Executive Dashboard & KPIs
-│   │   │   ├── RiskMonitor.jsx      # Filterable work risk monitor
-│   │   │   ├── WorkInvestigation.jsx# Full dossier & evidence breakdown
-│   │   │   ├── ComparePage.jsx      # Side-by-side work comparison
-│   │   │   ├── Analytics.jsx        # Category, agency & geographic analytics
-│   │   │   └── SentinelAI.jsx       # Grounded analytical AI assistant
-│   │   ├── services/
-│   │   │   ├── api.js               # Live FastAPI data connector with fallback
-│   │   │   └── sentinelAI.js        # Grounded intelligence reasoning engine
-│   │   └── App.js                   # Application routing and theme provider
-│   └── package.json                 # Frontend dependencies & scripts
-├── tests/
-│   ├── test_analytics_engine.py     # ML detector unit tests
-│   └── test_api_server.py           # FastAPI endpoint and upload security tests
-└── README.md                        # Documentation
+# Run all 47 unit, integration, and authorization tests
+pytest tests/ -v
 ```
 
 ---
 
-## 🔒 Security Posture
-* **Upload Defense**: 25 MB maximum upload limit on CSV ingest with chunked streaming and MIME validation.
-* **CORS Policy**: Restricted to authorized development origins (`localhost:3000`).
-* **Environment Integrity**: Zero secrets committed; 100% portable `pathlib.Path` resolution.
+## ⚖️ Responsible AI & Ethical Disclaimer
+
+Anomaly indicators and priority risk scores generated by ProcureGuard represent mathematical and statistical signals designed to assist human auditors in prioritizing workloads. **They do not constitute legal proof of fraud, corruption, collusion, or criminal wrongdoing.** Final determinations require authorized human inquiry and verification against physical project milestones.
 
 ---
 
-## 📄 License
-Developed for educational and demonstration purposes for the **Smart India Hackathon (SIH)**.
+*ProcureGuard — Developed for Smart India Hackathon (SIH 2026).*
