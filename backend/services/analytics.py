@@ -269,6 +269,12 @@ class AnalyticsService:
         for st, s in state_map.items():
             avg_risk = round(s["risk_sum"] / s["works"], 1) if s["works"] > 0 else 0.0
             u = round((s["expenditure"] / s["sanctioned"] * 100.0), 1) if s["sanctioned"] > 0 else 0.0
+            if s["highRisk"] >= 4 or avg_risk >= 30:
+                tier = "HIGH"
+            elif s["highRisk"] >= 1 or avg_risk >= 15:
+                tier = "MEDIUM"
+            else:
+                tier = "LOW"
             self.state_aggregates.append({
                 "code": s["code"],
                 "name": s["name"],
@@ -281,6 +287,7 @@ class AnalyticsService:
                 "highRisk": s["highRisk"],
                 "avgRisk": avg_risk,
                 "mean_risk": avg_risk,
+                "riskTier": tier,
                 "delayed": s["delayed"],
                 "counts": s["counts"],
                 "utilization": u,

@@ -281,7 +281,10 @@ export async function getExpenditureTrend() {
 export async function getStateAggregates() {
   try {
     const res = await apiClient.get('/states');
-    return res.data;
+    return (res.data || []).map((s) => ({
+      ...s,
+      riskTier: s.riskTier || (s.highRisk >= 4 ? 'HIGH' : s.highRisk >= 1 ? 'MEDIUM' : 'LOW'),
+    }));
   } catch (err) {
     logFallback('/states', err);
     return mockData.stateAggregates;

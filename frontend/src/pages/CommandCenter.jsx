@@ -187,21 +187,24 @@ export default function CommandCenter() {
           <div className="lg:col-span-5">
             <div className="text-[11px] uppercase tracking-wider text-[#737987] mb-2">Highest concentration</div>
             <div className="space-y-1.5">
-              {topStates.map((s) => (
-                <button key={s.code} onClick={() => navigate(`/risk?state=${s.code}`)} className="w-full flex items-center justify-between p-2.5 rounded-md bg-[#0D0F12] border border-divider hover:border-[#383C45] transition-colors group">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full" style={{ background: RISK_TIERS[s.riskTier].color }} />
-                    <div className="text-left">
-                      <div className="text-xs text-[#EDEDED] group-hover:text-white">{s.name}</div>
-                      <div className="text-[10px] text-[#737987] font-mono">{s.works} works · {formatCr(s.sanctioned)}</div>
+              {topStates.map((s) => {
+                const tier = RISK_TIERS[s.riskTier] || (s.highRisk >= 4 ? RISK_TIERS.HIGH : s.highRisk >= 1 ? RISK_TIERS.MEDIUM : RISK_TIERS.LOW);
+                return (
+                  <button key={s.code} onClick={() => navigate(`/risk?state=${s.code}`)} className="w-full flex items-center justify-between p-2.5 rounded-md bg-[#0D0F12] border border-divider hover:border-[#383C45] transition-colors group">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-2 h-2 rounded-full" style={{ background: tier.color }} />
+                      <div className="text-left">
+                        <div className="text-xs text-[#EDEDED] group-hover:text-white">{s.name}</div>
+                        <div className="text-[10px] text-[#737987] font-mono">{s.works || s.tenders || 0} tenders · {formatCr(s.sanctioned || 0)}</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono text-sm font-semibold" style={{ color: RISK_TIERS[s.riskTier].color }}>{s.highRisk}</div>
-                    <div className="text-[10px] text-[#737987]">high-risk</div>
-                  </div>
-                </button>
-              ))}
+                    <div className="text-right">
+                      <div className="font-mono text-sm font-semibold" style={{ color: tier.color }}>{s.highRisk}</div>
+                      <div className="text-[10px] text-[#737987]">priority</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
