@@ -130,7 +130,7 @@ export default function WorkInvestigation() {
             <Info2 icon={FileText} label="Tender Description" value={work.description} full />
             <Info2 icon={MapPin} label="State" value={work.state} />
             <Info2 icon={MapPin} label="District" value={work.district} />
-            <Info2 icon={MapPin} label="Procurement Dept / Unit" value={work.constituency} />
+            <Info2 icon={MapPin} label="Procuring Department" value={work.department || work.constituency} />
             <Info2 icon={Building2} label="Awarded Vendor" value={work.agency} />
             <Info2 icon={FileText} label="Category" value={work.category} />
             <Info2 icon={Calendar} label="Sanction / Issue Date" value={formatDate(work.sanctionDate)} />

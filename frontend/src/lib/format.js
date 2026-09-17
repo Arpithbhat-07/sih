@@ -1,4 +1,4 @@
-// Formatting helpers for the MPLADS Sentinel UI.
+// Formatting helpers for the ProcureGuard UI.
 
 // Indian grouping for plain integers, e.g. 1234567 -> "12,34,567"
 export function formatIndianNumber(n) {

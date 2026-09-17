@@ -7,13 +7,13 @@ import { Header } from './Header';
 const TITLES = {
   '/dashboard': 'Command Center',
   '/risk': 'Risk Monitor',
-  '/works': 'Work Explorer',
-  '/analytics': 'Programme Analytics',
+  '/works': 'Tender Explorer',
+  '/analytics': 'Procurement Analytics',
   '/alerts': 'Intelligence Alerts',
-  '/agencies': 'Implementing Agencies',
+  '/agencies': 'Vendor Intelligence',
   '/districts': 'District Monitoring',
   '/investigations': 'Investigation Queue',
-  '/ai': 'Sentinel AI',
+  '/ai': 'ProcureGuard AI',
   '/data-health': 'Data Health',
   '/settings': 'Settings',
 };
@@ -70,8 +70,8 @@ export const AppShell = () => {
             >
               <Outlet />
               <footer className="mt-10 pt-5 border-t border-divider flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span className="text-[11px] text-[#5C616D]">ProcureGuard — AI-assisted decision support for public procurement integrity</span>
-                <span className="text-[11px] text-[#5C616D] font-mono">Prototype • SIH 2026 · Synthetic Demonstration Dataset</span>
+                <span className="text-[11px] text-[#5C616D]">ProcureGuard • AI-Powered Public Procurement Anomaly & Investigation Intelligence</span>
+                <span className="text-[11px] text-[#5C616D] font-mono">Synthetic Demonstration Dataset</span>
               </footer>
             </motion.div>
           </AnimatePresence>

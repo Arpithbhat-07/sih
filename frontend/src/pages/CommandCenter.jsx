@@ -80,9 +80,9 @@ export default function CommandCenter() {
     heroSubtitle = `Localized risk assessment for ${data.totalWorks} tenders within ${user?.district || 'Bengaluru Urban'} district jurisdiction.`;
     scopeBadgeText = `${user?.district || 'Bengaluru Urban'} · District Scope`;
   } else if (role === 'MP') {
-    heroTitle = `Procurement Audit Dossier · ${user?.constituency || 'Bengaluru Urban'}`;
-    heroSubtitle = `Vigilance review tracking ${data.totalWorks} procurement tenders, vendor concentration, and contract execution.`;
-    scopeBadgeText = `${user?.constituency || 'Bengaluru Urban'} · Investigation Unit`;
+    heroTitle = `Special Investigation Dossier · ${user?.constituency || 'Vigilance'}`;
+    heroSubtitle = `Specialized investigation tracking ${data.totalWorks} procurement tenders, vendor concentration, and contract execution.`;
+    scopeBadgeText = `${user?.constituency || 'Vigilance'} · Special Investigation Unit`;
   }
 
   return (

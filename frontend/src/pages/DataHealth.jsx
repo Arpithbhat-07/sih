@@ -205,12 +205,12 @@ export default function DataHealth() {
                 </tbody>
               </table>
             </div>
-            {sortedScored.length > 25 && <div className="px-4 py-2.5 text-[11px] text-[#737987] border-t border-hairline">Showing top 25 of {sortedScored.length} scored works · export CSV for the full set.</div>}
+            {sortedScored.length > 25 && <div className="px-4 py-2.5 text-[11px] text-[#737987] border-t border-hairline">Showing top 25 of {sortedScored.length} scored tenders · export CSV for the full set.</div>}
           </Panel>
         </motion.div>
       )}
 
-      {!result && <p className="text-[11px] text-[#5C616D]">This prototype operates on a synthetic demonstration dataset. Upload a CSV above to see the anomaly engine re-score real rows instantly in the browser.</p>}
+      {!result && <p className="text-[11px] text-[#5C616D]">Operating on a synthetic demonstration dataset. Upload a procurement CSV above to see the anomaly engine re-score real rows instantly in the browser.</p>}
     </div>
   );
 }

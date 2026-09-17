@@ -1,6 +1,6 @@
 /**
  * Unit & Integration Tests for ProcureGuard AI Intelligence Engine
- * Verifies all 7 hackathon demo queries:
+ * Verifies all 7 core analytical demo queries:
  *   1. Anchor Case (TND-2026-01842)
  *   2. Top Vendor by Awards
  *   3. Price Anomalies (>25% Threshold)

@@ -1,4 +1,4 @@
-// Synthetic demonstration dataset for MPLADS Sentinel.
+// Synthetic demonstration dataset for ProcureGuard.
 // Deterministically generated so the demo is stable across reloads.
 // This module produces works, and derived state / district / agency / category
 // aggregates plus time-series used across the UI.

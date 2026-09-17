@@ -23,13 +23,13 @@ const heatColor = (v) => {
 export default function Analytics() {
   const [d, setD] = useState(null);
   useEffect(() => { api.getAnalytics().then(setD); }, []);
-  if (!d) return <Loader label="Compiling programme analytics…" />;
+  if (!d) return <Loader label="Compiling procurement analytics…" />;
 
   const cats = d.categories.map((c) => c.category);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Programme Analytics" subtitle="Identify trends, inefficiencies and structural patterns across MPLADS implementation." testId="analytics-page" />
+      <PageHeader title="Procurement Analytics" subtitle="Identify trends, price variations, and structural patterns across public procurement portfolios." testId="analytics-page" />
 
       {/* State performance */}
       <Panel>
@@ -38,13 +38,13 @@ export default function Analytics() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-header border-y border-hairline text-[#737987] text-[11px] uppercase tracking-wider">
-                {['State', 'Works', 'Sanctioned', 'Expenditure', 'Utilization', 'Avg Risk', 'Delayed %'].map((h) => <th key={h} className="text-left font-medium px-4 py-2.5">{h}</th>)}
+                {['State', 'Tenders', 'Award Value', 'Disbursed', 'Utilization', 'Avg Risk', 'Delayed %'].map((h) => <th key={h} className="text-left font-medium px-4 py-2.5">{h}</th>)}
               </tr>
             </thead>
             <tbody>
               {d.states.map((s) => (
                 <tr key={s.code} className="border-b border-divider hover:bg-surface-hover transition-colors">
-                  <td className="px-4 py-2.5 text-xs text-[#EDEDED] flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ background: RISK_TIERS[s.riskTier].color }} />{s.name}</td>
+                  <td className="px-4 py-2.5 text-xs text-[#EDEDED] flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ background: (RISK_TIERS[s.riskTier] || RISK_TIERS.LOW).color }} />{s.name}</td>
                   <td className="px-4 py-2.5 font-mono text-xs text-[#A0A5B0]">{s.works}</td>
                   <td className="px-4 py-2.5 font-mono text-xs text-[#A0A5B0]">{formatCr(s.sanctioned)}</td>
                   <td className="px-4 py-2.5 font-mono text-xs text-[#A0A5B0]">{formatCr(s.expenditure)}</td>
@@ -61,7 +61,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Category analysis */}
         <Panel>
-          <PanelHeader title="Category Analysis" subtitle="Works and average risk by category" />
+          <PanelHeader title="Category Analysis" subtitle="Tenders and average risk by category" />
           <div className="p-4 h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={d.categories} margin={{ top: 8, right: 8, left: -14, bottom: 40 }}>
@@ -69,7 +69,7 @@ export default function Analytics() {
                 <XAxis dataKey="category" tick={{ ...CHART.axisTick, fontFamily: 'IBM Plex Sans' }} axisLine={false} tickLine={false} angle={-30} textAnchor="end" height={60} interval={0} />
                 <YAxis tick={CHART.axisTick} axisLine={false} tickLine={false} width={44} />
                 <Tooltip contentStyle={CHART.tooltip.contentStyle} labelStyle={CHART.tooltip.labelStyle} itemStyle={CHART.tooltip.itemStyle} cursor={CHART.tooltip.cursor} />
-                <Bar dataKey="works" radius={[2, 2, 0, 0]} name="Works">
+                <Bar dataKey="works" radius={[2, 2, 0, 0]} name="Tenders">
                   {d.categories.map((c, i) => <Cell key={i} fill={riskColor(c.avgRisk)} />)}
                 </Bar>
               </BarChart>
@@ -79,18 +79,18 @@ export default function Analytics() {
 
         {/* Agency scatter */}
         <Panel>
-          <PanelHeader title="Agency Performance" subtitle="Avg cost vs avg risk (bubble = works)" />
+          <PanelHeader title="Vendor Performance" subtitle="Avg contract value vs avg risk (bubble = tenders)" />
           <div className="p-4 h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 8, right: 12, left: -6, bottom: 4 }}>
                 <CartesianGrid stroke={CHART.grid} strokeDasharray="3 3" />
-                <XAxis type="number" dataKey="avgCost" name="Avg cost" tick={CHART.axisTick} axisLine={false} tickLine={false} tickFormatter={(v) => formatINR(v, { withSymbol: false })} />
+                <XAxis type="number" dataKey="avgCost" name="Avg value" tick={CHART.axisTick} axisLine={false} tickLine={false} tickFormatter={(v) => formatINR(v, { withSymbol: false })} />
                 <YAxis type="number" dataKey="avgRisk" name="Avg risk" tick={CHART.axisTick} axisLine={false} tickLine={false} width={38} domain={[0, 100]} />
                 <ZAxis type="number" dataKey="projects" range={[40, 400]} />
                 <Tooltip contentStyle={CHART.tooltip.contentStyle} itemStyle={CHART.tooltip.itemStyle} cursor={{ strokeDasharray: '3 3', stroke: '#383C45' }}
-                  formatter={(v, n) => (n === 'Avg cost' ? formatINR(v) : v)}
+                  formatter={(v, n) => (n === 'Avg value' ? formatINR(v) : v)}
                   labelFormatter={() => ''} />
-                <Scatter data={d.agencies} name="Agencies">
+                <Scatter data={d.agencies} name="Vendors">
                   {d.agencies.map((a, i) => <Cell key={i} fill={riskColor(a.avgRisk)} fillOpacity={0.7} />)}
                 </Scatter>
               </ScatterChart>

@@ -56,8 +56,8 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
     ScopeIcon = MapPin;
     scopeColor = '#52C47E';
   } else if (role === 'MP') {
-    scopeLabel = `${user?.constituency || 'Bengaluru Urban'} · Audit Dossier`;
-    roleTitle = 'PROCUREMENT INVESTIGATOR';
+    scopeLabel = `${user?.constituency || 'Vigilance'} · Special Investigation`;
+    roleTitle = 'SPECIAL INVESTIGATOR';
     ScopeIcon = Award;
     scopeColor = '#8B5CF6';
   }
@@ -119,7 +119,7 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
             {results.length === 0 ? (
               <div className="px-4 py-4 text-xs text-[#737987]">No matching tenders found.</div>
             ) : results.map((w) => {
-              const t = RISK_TIERS[w.riskTier];
+              const t = RISK_TIERS[w.riskTier] || RISK_TIERS.LOW;
               return (
                 <button key={w.id} onMouseDown={() => go(w.id)} className="w-full text-left px-3 py-2.5 hover:bg-[#16191E] flex items-center gap-3 border-b border-divider last:border-0">
                   <span className="font-mono text-xs font-semibold" style={{ color: t.color }}>{w.riskScore}</span>

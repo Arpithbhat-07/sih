@@ -101,7 +101,7 @@ export default function Login() {
         <Wordmark />
         <div className="flex items-center gap-2 text-xs font-mono text-[#737987]">
           <Shield size={14} className="text-brand" />
-          PUBLIC PROCUREMENT INTELLIGENCE · SIH 2026
+          PUBLIC PROCUREMENT INTELLIGENCE PLATFORM
         </div>
       </header>
 
@@ -202,7 +202,7 @@ export default function Login() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-[#1E2126] text-[11px] text-[#5C616D] flex justify-between items-center">
-              <span>Prototype Credential: password is <code className="text-[#A0A5B0] font-mono">demo123</code></span>
+              <span>Standard Access Key: password is <code className="text-[#A0A5B0] font-mono">demo123</code></span>
               <span className="text-risk-low flex items-center gap-1 font-mono">
                 <CheckCircle2 size={12} /> PBKDF2 SECURED
               </span>
@@ -212,7 +212,7 @@ export default function Login() {
           {/* Right Column: Demo Accounts Quick Select */}
           <div className="lg:col-span-5 flex flex-col justify-between gap-4">
             <div className="text-xs font-mono uppercase tracking-wider text-[#737987] px-1">
-              Select Demo Persona (1-Click Login)
+              Select Authorized Role (1-Click Sign In)
             </div>
 
             <div className="space-y-3 flex-1 flex flex-col justify-between">
@@ -265,7 +265,7 @@ export default function Login() {
 
       {/* Footer Disclaimer */}
       <footer className="py-4 border-t border-[#1E2126] text-center text-xs text-[#5C616D] px-4 font-mono">
-        Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.
+        Analytical signals do not constitute proof of fraud, corruption, misconduct, or wrongdoing. Final assessment requires authorized human investigation.
       </footer>
     </div>
   );

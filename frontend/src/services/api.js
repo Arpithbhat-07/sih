@@ -1,5 +1,5 @@
-// Service/data-access layer for MPLADS Sentinel.
-// Connects React UI to live FastAPI REST backend with graceful demo fallback.
+// Service/data-access layer for ProcureGuard.
+// Connects React UI to live FastAPI REST backend with graceful fallback.
 
 import axios from 'axios';
 import * as mockData from '../data/mockData';
