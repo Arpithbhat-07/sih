@@ -98,7 +98,9 @@ export default function WorkInvestigation() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <Panel className="lg:col-span-4 flex flex-col items-center justify-center p-6">
           <RadialScore score={work.riskScore} size={200} />
-          <p className="text-xs text-[#A0A5B0] text-center mt-4 max-w-[220px]">Investigation priority — authorized human review recommended before disbursement clearance.</p>
+          <p className="text-xs text-[#A0A5B0] text-center mt-4 max-w-[240px]">
+            Investigation-priority score derived from multiple analytical signals. Represents prioritization order, not probability of wrongdoing.
+          </p>
         </Panel>
 
         <Panel className="lg:col-span-8">
@@ -268,13 +270,13 @@ export default function WorkInvestigation() {
             {queued ? <><CircleCheck size={14} /> In Queue</> : <><Plus size={14} /> Add to Investigation Queue</>}
           </button>
           <button onClick={() => navigate('/ai')} className="inline-flex items-center gap-1.5 text-xs h-9 px-3 rounded-md border border-hairline bg-surface text-[#A0A5B0] hover:text-[#EDEDED] hover:border-[#383C45] transition-colors">
-            Ask Sentinel AI <ArrowRight size={13} />
+            Ask ProcureGuard AI <ArrowRight size={13} />
           </button>
         </div>
       </div>
 
       <p className="text-[11px] text-[#5C616D] flex items-center gap-1.5 justify-center pt-1">
-        <Info size={12} /> Anomaly indicators represent analytical signals and do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.
+        <Info size={12} /> Analytical signals do not constitute proof of fraud, corruption, misconduct, or wrongdoing. Final assessment requires authorized human investigation.
       </p>
     </div>
   );

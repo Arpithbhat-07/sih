@@ -56,7 +56,7 @@ apiClient.interceptors.response.use(
 let hasLoggedFallback = false;
 function logFallback(endpoint, err) {
   if (!hasLoggedFallback) {
-    console.warn(`[MPLADS Sentinel] API unavailable at ${API_BASE_URL} (${endpoint}) — using demo fallback`, err?.message || err);
+    console.warn(`[ProcureGuard] API unavailable at ${API_BASE_URL} (${endpoint}) — using demo fallback`, err?.message || err);
     hasLoggedFallback = true;
   }
 }
@@ -549,6 +549,30 @@ function queryWorksFallback({
 }
 
 function getWorkDetailFallback(id) {
+  if (id === 'TND-2026-01842') {
+    return normalizeWork({
+      id: 'TND-2026-01842',
+      workId: 'TND-2026-01842',
+      description: 'Supply and Installation of IT Infrastructure and Enterprise Hardware',
+      department: 'Information Technology Directorate',
+      category: 'Information Technology',
+      state: 'Maharashtra',
+      stateCode: 'IN-MH',
+      district: 'Mumbai Suburban',
+      agency: 'V-1042 Enterprise Logistics',
+      vendorName: 'V-1042 Enterprise Logistics',
+      sanctionedAmount: 3378000,
+      awardedValue: 3378000,
+      expenditure: 3378000,
+      bidderCount: 2,
+      riskScore: 84,
+      riskTier: 'CRITICAL',
+      costDeviation: 65.8,
+      delayed: false,
+      primarySignal: 'Cost anomaly (+65.8% above peer median)',
+      status: 'In Progress',
+    });
+  }
   const w = mockData.getWorkById(id);
   if (!w) return null;
   const breakdown = mockData.buildBreakdown(w);

@@ -114,7 +114,7 @@ export default function DataHealth() {
         </Panel>
 
         <Panel>
-          <PanelHeader title="Ingest Dataset" subtitle="Upload a real MPLADS CSV — works are re-scored instantly on screen" />
+          <PanelHeader title="Ingest Dataset" subtitle="Upload a procurement CSV — tenders are re-scored instantly on screen" />
           <div className="p-5">
             <label
               onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
@@ -126,7 +126,7 @@ export default function DataHealth() {
               <div className="w-12 h-12 rounded-lg border border-hairline bg-[#0D0F12] flex items-center justify-center mb-3">
                 <UploadCloud size={22} className="text-brand" />
               </div>
-              <span className="text-sm text-[#EDEDED] font-medium">Upload MPLADS CSV</span>
+              <span className="text-sm text-[#EDEDED] font-medium">Upload Procurement CSV</span>
               <span className="text-xs text-[#737987] mt-1">Drag & drop or click to browse — .csv up to 50 MB</span>
               <input type="file" className="hidden" accept=".csv,text/csv" onChange={(e) => onFile(e.target.files?.[0])} data-testid="file-input" />
             </label>

@@ -324,6 +324,9 @@ export const RelationshipGraph = ({ data, onSelectNode, selectedId = null, heigh
                 ) : (
                   <div className="p-3 rounded bg-[#0D0F12] border border-hairline mb-4 text-xs text-[#A0A5B0]">
                     Connected across the procurement graph through awards, tenders, and co-bidding patterns.
+                    <div className="text-[10px] text-[#737987] mt-1.5 italic">
+                      Observable relationship in the synthetic demonstration dataset.
+                    </div>
                   </div>
                 )}
               </div>

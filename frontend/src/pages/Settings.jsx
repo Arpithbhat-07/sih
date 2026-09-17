@@ -59,11 +59,11 @@ export default function Settings() {
       <Panel>
         <PanelHeader title="About" subtitle="Prototype information" />
         <div className="p-5 space-y-2 text-xs text-[#A0A5B0]">
-          <Row k="Product" v="MPLADS Sentinel" />
-          <Row k="Version" v="0.9.0 · Prototype" />
+          <Row k="Product" v="ProcureGuard" />
+          <Row k="Version" v="1.0.0 · SIH Final Release" />
           <Row k="Event" v="Smart India Hackathon 2026" />
-          <Row k="Dataset" v="Synthetic Demonstration Dataset" />
-          <Row k="Data mode" v="Local mock service layer (backend-ready)" />
+          <Row k="Dataset" v="Synthetic Demonstration Dataset (5,000 Tenders)" />
+          <Row k="Data mode" v="FastAPI Engine + Resilient Frontend Client" />
         </div>
       </Panel>
     </div>

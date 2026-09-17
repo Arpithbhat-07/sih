@@ -135,7 +135,7 @@ export const Sidebar = ({ onNavigate, onClose, mobile = false }) => {
         <span className="text-[#737987] font-mono">Today, 09:42 AM</span>
       </div>
       <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-hairline bg-[#0D0F12] text-[10px] text-[#737987]">
-        <span className="w-1 h-1 rounded-full bg-ai" /> Prototype • SIH 2026
+        <span className="w-1 h-1 rounded-full bg-ai" /> Synthetic Demonstration Dataset • SIH 2026
       </div>
     </div>
   </aside>

@@ -19,10 +19,10 @@ const TITLES = {
 };
 
 function titleFor(pathname) {
-  if (pathname.startsWith('/works/')) return 'Work Investigation';
-  if (pathname.startsWith('/compare/')) return 'Duplicate Comparison';
-  if (pathname.startsWith('/agencies/')) return 'Agency Intelligence';
-  return TITLES[pathname] || 'MPLADS Sentinel';
+  if (pathname.startsWith('/works/')) return 'Tender Investigation';
+  if (pathname.startsWith('/compare/')) return 'Bid Comparison';
+  if (pathname.startsWith('/agencies/')) return 'Vendor Intelligence';
+  return TITLES[pathname] || 'ProcureGuard';
 }
 
 export const AppShell = () => {
@@ -70,7 +70,7 @@ export const AppShell = () => {
             >
               <Outlet />
               <footer className="mt-10 pt-5 border-t border-divider flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span className="text-[11px] text-[#5C616D]">MPLADS Sentinel — AI-assisted decision support for public programme monitoring</span>
+                <span className="text-[11px] text-[#5C616D]">ProcureGuard — AI-assisted decision support for public procurement integrity</span>
                 <span className="text-[11px] text-[#5C616D] font-mono">Prototype • SIH 2026 · Synthetic Demonstration Dataset</span>
               </footer>
             </motion.div>

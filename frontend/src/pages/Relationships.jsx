@@ -83,8 +83,7 @@ export default function Relationships() {
 
       {/* Responsible AI Disclaimer */}
       <p className="text-[11px] text-[#737987] text-center max-w-2xl mx-auto">
-        Analytical signals and relational links represent observed participation overlap and structural patterns.
-        They do not constitute proof of collusion or wrongdoing. Final assessment requires authorized human investigation.
+        Observable relationship in the synthetic demonstration dataset. Analytical signals and relational links represent observed participation overlap and structural patterns. They do not constitute proof of fraud, corruption, misconduct, or wrongdoing. Final assessment requires authorized human investigation.
       </p>
     </div>
   );

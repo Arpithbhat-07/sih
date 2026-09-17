@@ -81,7 +81,7 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-risk-low opacity-60" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-risk-low" />
             </span>
-            LIVE ANALYTICS
+            LIVE ANALYTICS · SYNTHETIC DATASET
           </div>
         </div>
 

@@ -81,9 +81,9 @@ export function generateBriefPdf(work) {
   // Header band
   doc.setFillColor(9, 10, 11); doc.rect(0, 0, W, 84, 'F');
   doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
-  doc.text('MPLADS SENTINEL', M, 40);
+  doc.text('PROCUREGUARD', M, 40);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(180);
-  doc.text('Investigation Brief  ·  AI-assisted decision support', M, 58);
+  doc.text('Investigation Brief  ·  AI-assisted procurement decision support', M, 58);
   doc.setTextColor(120); doc.setFontSize(8);
   doc.text(`Generated ${new Date().toLocaleString('en-IN')}  ·  Prototype · SIH 2026`, M, 72);
   y = 110;
