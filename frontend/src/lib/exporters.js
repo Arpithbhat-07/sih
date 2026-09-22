@@ -34,15 +34,15 @@ export function downloadCsv(filename, rows, columns) {
 
 // ---- Risk Monitor / works export ----
 export const WORK_EXPORT_COLUMNS = [
-  { key: 'id', label: 'Tender ID' },
+  { key: 'id', label: 'Work ID' },
   { key: 'description', label: 'Description' },
   { key: 'state', label: 'State' },
   { key: 'district', label: 'District' },
-  { key: 'department', label: 'Procuring Department' },
-  { key: 'agency', label: 'Winning Vendor' },
+  { key: 'constituency', label: 'Constituency' },
+  { key: 'agency', label: 'Implementing Agency' },
   { key: 'category', label: 'Category' },
-  { key: 'sanctionedAmount', label: 'Awarded Value (INR)' },
-  { key: 'expenditure', label: 'Disbursed (INR)' },
+  { key: 'sanctionedAmount', label: 'Sanctioned (INR)' },
+  { key: 'expenditure', label: 'Expenditure (INR)' },
   { key: 'utilization', label: 'Utilization %' },
   { key: 'costDeviation', label: 'Cost Deviation %' },
   { key: 'delayDays', label: 'Delay (days)' },
@@ -81,11 +81,11 @@ export function generateBriefPdf(work) {
   // Header band
   doc.setFillColor(9, 10, 11); doc.rect(0, 0, W, 84, 'F');
   doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
-  doc.text('PROCUREGUARD', M, 40);
+  doc.text('MPLADS SENTINEL', M, 40);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(180);
-  doc.text('Investigation Brief  ·  AI-assisted procurement decision support', M, 58);
+  doc.text('Investigation Brief  ·  AI-assisted decision support', M, 58);
   doc.setTextColor(120); doc.setFontSize(8);
-  doc.text(`Generated ${new Date().toLocaleString('en-IN')}  ·  ProcureGuard Platform`, M, 72);
+  doc.text(`Generated ${new Date().toLocaleString('en-IN')}  ·  Prototype · SIH 2026`, M, 72);
   y = 110;
 
   const tier = work.riskTier;
@@ -98,11 +98,11 @@ export function generateBriefPdf(work) {
   text(work.description, 11, [70, 70, 70]);
   line(4); rule();
 
-  text('TENDER INFORMATION', 11, [20, 20, 20], 'bold'); line(2);
+  text('WORK INFORMATION', 11, [20, 20, 20], 'bold'); line(2);
   kv('State', work.state);
   kv('District', work.district);
-  kv('Procuring Department', work.department || work.constituency || 'Department of Public Works');
-  kv('Winning Vendor', work.vendorName || work.agency);
+  kv('MP Constituency', work.constituency);
+  kv('Implementing Agency', work.agency);
   kv('Category', work.category);
   kv('Sanction Date', formatDate(work.sanctionDate));
   kv('Expected Completion', formatDate(work.expectedCompletion));
@@ -112,15 +112,15 @@ export function generateBriefPdf(work) {
   const f = work.financials || work;
   text('FINANCIAL ANALYSIS', 11, [20, 20, 20], 'bold'); line(2);
   kv('Estimated Cost', formatINR(f.estimatedCost));
-  kv('Awarded Value', formatINR(f.sanctionedAmount || f.awardedValue));
-  kv('Disbursed Amount', formatINR(f.expenditure || f.paymentAmount));
+  kv('Sanctioned Amount', formatINR(f.sanctionedAmount));
+  kv('Expenditure', formatINR(f.expenditure));
   kv('Utilization', formatPct(f.utilization, 0));
   kv('Cost Deviation', formatSignedPct(f.costDeviation, 0));
   if (f.historicalMedian) kv('Historical Median', formatINR(f.historicalMedian));
   line(4); rule();
 
   if (work.findings?.length) {
-    text('ANALYTICAL SIGNALS', 11, [20, 20, 20], 'bold'); line(2);
+    text('AI FINDINGS', 11, [20, 20, 20], 'bold'); line(2);
     work.findings.forEach((fd) => {
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(30);
       doc.text(`• ${fd.title}  (${fd.severity}, ${fd.confidence}% confidence)`, M, y); line(14);
@@ -132,12 +132,12 @@ export function generateBriefPdf(work) {
   }
 
   text('RECOMMENDED ACTION', 11, [20, 20, 20], 'bold'); line(2);
-  text('Recommend detailed technical and financial audit review before final milestone sign-off.', 10, [60, 60, 60]);
-  ['Verify technical estimate and schedule of rates', 'Compare BOQ and sanctioned estimate', 'Review payment disbursement history', 'Verify physical progress with geo-tagged records', 'Cross-check vendor concentration in department', 'Inspect co-bidding network patterns']
+  text('Recommend detailed financial and procurement review before final closure.', 10, [60, 60, 60]);
+  ['Verify technical estimate', 'Compare BOQ and sanctioned estimate', 'Review payment history', 'Verify physical progress', 'Compare similar works', 'Review implementing agency history']
     .forEach((c) => { text(`[ ]  ${c}`, 9, [80, 80, 80], 'normal', M + 12); });
   line(6);
   doc.setDrawColor(230); doc.setFillColor(248, 248, 248);
-  const boxY = y; const boxLines = doc.splitTextToSize('Analytical signals do not constitute proof of fraud, corruption, misconduct, or wrongdoing. Final assessment requires authorized human investigation.', maxW - 20);
+  const boxY = y; const boxLines = doc.splitTextToSize('Anomaly indicators represent analytical signals and do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.', maxW - 20);
   doc.rect(M, boxY, maxW, boxLines.length * 11 + 16, 'FD');
   doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(110);
   doc.text(boxLines, M + 10, boxY + 14);

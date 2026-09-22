@@ -49,21 +49,21 @@ export default function Settings() {
             <span className="font-mono text-sm text-brand font-semibold">{threshold}</span>
           </div>
           <input type="range" min={60} max={95} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className="w-full accent-brand" data-testid="threshold-slider" />
-          <p className="text-[11px] text-[#737987] mt-2">Tenders scoring at or above this value are auto-classified as critical priority.</p>
+          <p className="text-[11px] text-[#737987] mt-2">Works scoring at or above this value are auto-classified as critical priority.</p>
           <div className="mt-4 pt-4 border-t border-divider">
-            <Setting icon={Database} title="Auto-assign to queue" desc="Automatically add new critical tenders to the investigation queue"><Toggle on={s.autoAssign} onChange={(v) => set('autoAssign', v)} /></Setting>
+            <Setting icon={Database} title="Auto-assign to queue" desc="Automatically add new critical works to the investigation queue"><Toggle on={s.autoAssign} onChange={(v) => set('autoAssign', v)} /></Setting>
           </div>
         </div>
       </Panel>
 
       <Panel>
-        <PanelHeader title="About" subtitle="Platform information" />
+        <PanelHeader title="About" subtitle="Prototype information" />
         <div className="p-5 space-y-2 text-xs text-[#A0A5B0]">
-          <Row k="Product" v="ProcureGuard" />
-          <Row k="Version" v="1.0.0 · Release" />
-          <Row k="Environment" v="Production Analytics" />
-          <Row k="Dataset" v="Synthetic Demonstration Dataset (5,000 Tenders)" />
-          <Row k="Data mode" v="FastAPI Engine + Resilient Frontend Client" />
+          <Row k="Product" v="MPLADS Sentinel" />
+          <Row k="Version" v="0.9.0 · Prototype" />
+          <Row k="Event" v="Smart India Hackathon 2026" />
+          <Row k="Dataset" v="Synthetic Demonstration Dataset" />
+          <Row k="Data mode" v="Local mock service layer (backend-ready)" />
         </div>
       </Panel>
     </div>

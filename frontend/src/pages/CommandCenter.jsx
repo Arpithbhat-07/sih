@@ -21,7 +21,7 @@ import * as api from '../services/api';
 const DonutLabel = ({ total }) => (
   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
     <div className="font-mono text-2xl font-semibold text-[#EDEDED] tabular-nums">{formatIndianNumber(total)}</div>
-    <div className="text-[11px] text-[#737987]">total tenders</div>
+    <div className="text-[11px] text-[#737987]">total works</div>
   </div>
 );
 
@@ -61,28 +61,28 @@ export default function CommandCenter() {
     });
   }, []);
 
-  if (!data) return <Loader label="Loading procurement intelligence overview…" />;
+  if (!data) return <Loader label="Loading jurisdictional overview…" />;
 
   const donut = TIER_ORDER.map((k) => ({ name: RISK_TIERS[k].label, value: data.counts?.[k] || 0, color: RISK_TIERS[k].color, key: k }));
   const topStates = [...states].sort((a, b) => b.highRisk - a.highRisk).slice(0, 6);
 
   // Role-tailored headline and descriptions
-  let heroTitle = 'From thousands of tenders to prioritized action.';
-  let heroSubtitle = 'ProcureGuard continuously analyzes bid pricing, bidder participation, vendor concentration, and contract execution signals to identify where attention is needed most.';
+  let heroTitle = 'From thousands of records to prioritized action.';
+  let heroSubtitle = 'Sentinel continuously analyzes project, financial and execution signals to identify where attention is needed most.';
   let scopeBadgeText = 'National Scope · All India';
 
   if (role === 'STATE_AUTHORITY') {
-    heroTitle = `State Procurement Center · ${user?.state || 'Karnataka'}`;
-    heroSubtitle = `Monitoring ${data.totalWorks} public tenders across ${user?.state || 'Karnataka'}'s departments and districts.`;
+    heroTitle = `State Command Center · ${user?.state || 'Karnataka'}`;
+    heroSubtitle = `Monitoring ${data.totalWorks} sanctioned public works across ${user?.state || 'Karnataka'}'s implementing agencies and districts.`;
     scopeBadgeText = `${user?.state || 'Karnataka'} · State Jurisdiction`;
   } else if (role === 'DISTRICT_AUTHORITY') {
-    heroTitle = `District Tender Center · ${user?.district || 'Bengaluru Urban'}`;
-    heroSubtitle = `Localized risk assessment for ${data.totalWorks} tenders within ${user?.district || 'Bengaluru Urban'} district jurisdiction.`;
+    heroTitle = `District Monitoring Center · ${user?.district || 'Bengaluru Urban'}`;
+    heroSubtitle = `Localized risk assessment for ${data.totalWorks} works within ${user?.district || 'Bengaluru Urban'} district jurisdiction.`;
     scopeBadgeText = `${user?.district || 'Bengaluru Urban'} · District Scope`;
   } else if (role === 'MP') {
-    heroTitle = `Special Investigation Dossier · ${user?.constituency || 'Vigilance'}`;
-    heroSubtitle = `Specialized investigation tracking ${data.totalWorks} procurement tenders, vendor concentration, and contract execution.`;
-    scopeBadgeText = `${user?.constituency || 'Vigilance'} · Special Investigation Unit`;
+    heroTitle = `My MPLADS Works · ${user?.constituency || 'Bengaluru Urban PC'}`;
+    heroSubtitle = `Constituency dashboard tracking portfolio health, delay alerts, and fund utilization for ${data.totalWorks} recommended works.`;
+    scopeBadgeText = `${user?.constituency || 'Bengaluru Urban PC'} · My Projects`;
   }
 
   return (
@@ -98,24 +98,24 @@ export default function CommandCenter() {
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[#EDEDED]">{heroTitle}</h1>
             <p className="text-sm text-[#A0A5B0] mt-2 max-w-2xl">
               {heroSubtitle}
-              <span className="text-[#EDEDED]"> We prioritize cases for authorized human review; our signals are decision-support, not judicial findings.</span>
+              <span className="text-[#EDEDED]"> We don't replace investigation, we tell authorities where to look first.</span>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <FilterPill value={fy} onChange={setFy} options={[FISCAL_YEAR, 'FY 2024–25', 'FY 2023–24']} />
             <FilterPill value={stateF} onChange={setStateF} options={['All States', ...states.map((s) => s.name)]} />
-            <FilterPill value={catF} onChange={setCatF} options={['All Categories', 'Roads & Bridges', 'Healthcare & Medical Supplies', 'IT & Digital Infrastructure', 'School Infrastructure', 'Water Supply & Sanitation']} />
+            <FilterPill value={catF} onChange={setCatF} options={['All Categories', 'Education', 'Health', 'Road Construction', 'Water & Sanitation']} />
           </div>
         </div>
       </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-        <KpiCard testId="kpi-total-works" label="Total Tenders" value={data.totalWorks} icon={Layers} trend={4.2} index={0} onClick={() => navigate('/works')} />
-        <KpiCard testId="kpi-total-sanctioned" label="Total Award Value" value={data.totalSanctioned / 1e7} prefix="₹" suffix=" Cr" decimals={0} icon={IndianRupee} trend={2.8} accent="#8B5CF6" index={1} />
-        <KpiCard testId="kpi-high-risk" label="High-Priority Cases" value={data.highRiskWorks} icon={ShieldAlert} trend={12.4} accent="#F15252" index={2} onClick={() => navigate('/risk?riskLevel=HIGH')} />
-        <KpiCard testId="kpi-delayed" label="Delayed Contracts" value={data.delayedWorks} icon={Clock} trend={6.1} accent="#F59638" index={3} onClick={() => navigate('/risk')} />
-        <KpiCard testId="kpi-duplicates" label="Network / Cloned Flags" value={data.duplicateCandidates} icon={Copy} trend={-3.4} accent="#F3D35E" index={4} onClick={() => navigate('/relationships')} />
+        <KpiCard testId="kpi-total-works" label="Total Works" value={data.totalWorks} icon={Layers} trend={4.2} index={0} onClick={() => navigate('/works')} />
+        <KpiCard testId="kpi-total-sanctioned" label="Total Sanctioned" value={data.totalSanctioned / 1e7} prefix="₹" suffix=" Cr" decimals={0} icon={IndianRupee} trend={2.8} accent="#8B5CF6" index={1} />
+        <KpiCard testId="kpi-high-risk" label="High Risk Works" value={data.highRiskWorks} icon={ShieldAlert} trend={12.4} accent="#F15252" index={2} onClick={() => navigate('/risk?riskLevel=HIGH')} />
+        <KpiCard testId="kpi-delayed" label="Delayed Works" value={data.delayedWorks} icon={Clock} trend={6.1} accent="#F59638" index={3} onClick={() => navigate('/risk')} />
+        <KpiCard testId="kpi-duplicates" label="Duplicate Candidates" value={data.duplicateCandidates} icon={Copy} trend={-3.4} accent="#F3D35E" index={4} />
       </div>
 
       {/* Risk overview */}
@@ -187,24 +187,21 @@ export default function CommandCenter() {
           <div className="lg:col-span-5">
             <div className="text-[11px] uppercase tracking-wider text-[#737987] mb-2">Highest concentration</div>
             <div className="space-y-1.5">
-              {topStates.map((s) => {
-                const tier = RISK_TIERS[s.riskTier] || (s.highRisk >= 4 ? RISK_TIERS.HIGH : s.highRisk >= 1 ? RISK_TIERS.MEDIUM : RISK_TIERS.LOW);
-                return (
-                  <button key={s.code} onClick={() => navigate(`/risk?state=${s.code}`)} className="w-full flex items-center justify-between p-2.5 rounded-md bg-[#0D0F12] border border-divider hover:border-[#383C45] transition-colors group">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-2 h-2 rounded-full" style={{ background: tier.color }} />
-                      <div className="text-left">
-                        <div className="text-xs text-[#EDEDED] group-hover:text-white">{s.name}</div>
-                        <div className="text-[10px] text-[#737987] font-mono">{s.works || s.tenders || 0} tenders · {formatCr(s.sanctioned || 0)}</div>
-                      </div>
+              {topStates.map((s) => (
+                <button key={s.code} onClick={() => navigate(`/risk?state=${s.code}`)} className="w-full flex items-center justify-between p-2.5 rounded-md bg-[#0D0F12] border border-divider hover:border-[#383C45] transition-colors group">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-2 h-2 rounded-full" style={{ background: RISK_TIERS[s.riskTier].color }} />
+                    <div className="text-left">
+                      <div className="text-xs text-[#EDEDED] group-hover:text-white">{s.name}</div>
+                      <div className="text-[10px] text-[#737987] font-mono">{s.works} works · {formatCr(s.sanctioned)}</div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-mono text-sm font-semibold" style={{ color: tier.color }}>{s.highRisk}</div>
-                      <div className="text-[10px] text-[#737987]">priority</div>
-                    </div>
-                  </button>
-                );
-              })}
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono text-sm font-semibold" style={{ color: RISK_TIERS[s.riskTier].color }}>{s.highRisk}</div>
+                    <div className="text-[10px] text-[#737987]">high-risk</div>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -276,15 +273,15 @@ export default function CommandCenter() {
       {/* Priority alerts */}
       <Panel>
         <PanelHeader
-          title="Priority Tender Alerts"
-          subtitle="Highest-priority tenders flagged for review"
+          title="Priority Alerts"
+          subtitle="Highest-priority works flagged for review"
           action={<button onClick={() => navigate('/alerts')} className="text-xs text-brand hover:text-white transition-colors flex items-center gap-1">View all <ArrowRight size={13} /></button>}
         />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-header border-y border-hairline text-[#737987] text-[11px] uppercase tracking-wider">
-                <th className="text-left font-medium px-4 py-2.5">Tender ID</th>
+                <th className="text-left font-medium px-4 py-2.5">Work ID</th>
                 <th className="text-left font-medium px-4 py-2.5">Location</th>
                 <th className="text-left font-medium px-4 py-2.5 hidden md:table-cell">Category</th>
                 <th className="text-left font-medium px-4 py-2.5">Risk</th>
@@ -319,16 +316,16 @@ export default function CommandCenter() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-sm font-semibold text-[#EDEDED]">ProcureGuard AI Insight</h3>
+                <h3 className="text-sm font-semibold text-[#EDEDED]">Sentinel AI Insight</h3>
                 <span className="text-[10px] font-mono text-ai px-1.5 py-0.5 rounded bg-ai/10 border border-ai/20">GENERATED</span>
               </div>
               <p className="text-[13px] text-[#C9CDD6] leading-relaxed max-w-3xl">
-                Anomaly signals indicate clustering in 3 regional sectors over the recent bidding cycle. Primary contributing factors include
-                abnormal price bids, single-bidder participation rates, and vendor award concentration. Prioritized review
-                is recommended for the {data.counts.CRITICAL} critical tenders.
+                Risk concentration has increased in 3 districts over the last quarter. The strongest contributing signals are
+                abnormal project costs, extended completion periods and high agency-level concentration. Prioritized review
+                is recommended for the {data.counts.CRITICAL} critical works.
               </p>
               <button onClick={() => navigate('/ai')} className="mt-3 text-xs text-ai hover:text-[#a78bfa] transition-colors inline-flex items-center gap-1">
-                Ask ProcureGuard AI <ArrowRight size={13} />
+                View Analysis <ArrowRight size={13} />
               </button>
             </div>
           </div>

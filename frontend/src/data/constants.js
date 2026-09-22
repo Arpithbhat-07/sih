@@ -1,4 +1,4 @@
-// Domain constants for ProcureGuard.
+// Domain constants for MPLADS Sentinel.
 
 export const RISK_TIERS = {
   CRITICAL: { key: 'CRITICAL', label: 'Critical', min: 80, max: 100, color: '#F15252', bg: 'rgba(241,82,82,0.10)', border: 'rgba(241,82,82,0.28)', dot: '#F15252' },

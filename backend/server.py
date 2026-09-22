@@ -1,11 +1,12 @@
 """
-ProcureGuard - FastAPI Analytics & Intelligence Server
-Exposes high-performance REST APIs driven by the real modular procurement anomaly detection engine.
+MPLADS Sentinel - FastAPI Analytics Server
+Exposes high-performance REST APIs driven by the real analytical & ML engine.
 """
 
 import sys
 from pathlib import Path
 
+# Ensure project root and backend are in sys.path regardless of execution folder
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent
 for p in [str(PROJECT_ROOT), str(BASE_DIR)]:
@@ -30,20 +31,18 @@ from backend.auth import (
     LoginResponse,
 )
 
-# Locate dataset
+# Locate default dataset
 ROOT_DIR = Path(__file__).parent
-DATA_PATH = ROOT_DIR / "data" / "procurement_synthetic.csv"
-if not DATA_PATH.exists():
-    DATA_PATH = ROOT_DIR / "data" / "mplads_synthetic.csv"
+DATA_PATH = ROOT_DIR / "data" / "mplads_synthetic.csv"
 
 app = FastAPI(
-    title="ProcureGuard API",
+    title="MPLADS Sentinel API",
     description=(
-        "AI-Powered Public Procurement Anomaly & Investigation Intelligence Platform.\n\n"
-        "Analytical signals do not constitute proof of fraud, corruption, misconduct, or wrongdoing. "
+        "Analytical decision-support system for prioritizing MPLADS public works for human review.\n\n"
+        "Analytical signals do not constitute proof of fraud or misconduct. "
         "Final assessment requires authorized human investigation."
     ),
-    version="2.0.0",
+    version="1.0.0",
 )
 
 # CORS configuration
@@ -58,6 +57,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize analytical engine with synthetic dataset
 analytics_service = AnalyticsService(str(DATA_PATH) if DATA_PATH.exists() else None)
 
 api_router = APIRouter(prefix="/api")
@@ -66,11 +66,11 @@ api_router = APIRouter(prefix="/api")
 @api_router.get("/")
 def root():
     return {
-        "service": "ProcureGuard API",
-        "version": "2.0.0",
+        "service": "MPLADS Sentinel API",
+        "version": "1.0.0",
         "status": "online",
-        "total_tenders_indexed": analytics_service.summary.get("totalTenders", 0),
-        "disclaimer": "Analytical signals do not constitute proof of fraud, corruption, misconduct, or wrongdoing. Final assessment requires authorized human investigation.",
+        "total_works_indexed": analytics_service.summary.get("totalWorks", 0),
+        "disclaimer": "Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.",
     }
 
 
@@ -78,9 +78,9 @@ def root():
 def health_check():
     return {
         "status": "ok",
-        "service": "ProcureGuard API",
+        "service": "MPLADS Sentinel API",
         "dataset": {
-            "records": analytics_service.summary.get("totalTenders", 5000),
+            "records": analytics_service.summary.get("totalWorks", 3000),
         },
     }
 
@@ -129,19 +129,9 @@ def get_districts(user: Optional[User] = Depends(get_current_user_optional)):
     return analytics_service.get_scoped_districts(user)
 
 
-@api_router.get("/vendors")
 @api_router.get("/agencies")
-def get_vendors(user: Optional[User] = Depends(get_current_user_optional)):
+def get_agencies(user: Optional[User] = Depends(get_current_user_optional)):
     return analytics_service.get_scoped_agencies(user)
-
-
-@api_router.get("/vendors/{vendor_id}")
-@api_router.get("/agencies/{vendor_id}")
-def get_vendor_detail(vendor_id: str):
-    profile = analytics_service.get_vendor_detail(vendor_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail=f"Vendor {vendor_id} not found.")
-    return profile
 
 
 @api_router.get("/categories")
@@ -149,10 +139,16 @@ def get_categories(user: Optional[User] = Depends(get_current_user_optional)):
     return analytics_service.get_scoped_categories(user)
 
 
-@api_router.get("/relationships")
-def get_relationships():
-    """Returns multi-entity relationship graph nodes and links."""
-    return analytics_service.network_graph
+@api_router.get("/duplicates")
+def get_duplicate_candidates(limit: int = 50, user: Optional[User] = Depends(get_current_user_optional)):
+    if not user or user.role == "MINISTRY":
+        return analytics_service.duplicate_candidates[:limit]
+    scoped_works = {w["id"] for w in analytics_service.filter_works_by_scope(user)}
+    scoped_dups = [
+        d for d in analytics_service.duplicate_candidates
+        if d.get("work_a") in scoped_works and d.get("work_b") in scoped_works
+    ]
+    return scoped_dups[:limit]
 
 
 @api_router.get("/alerts")
@@ -166,16 +162,43 @@ def get_filters(user: Optional[User] = Depends(get_current_user_optional)):
 
 
 @api_router.get("/risk")
-@api_router.get("/tenders")
-@api_router.get("/works")
-def query_tenders(
-    search: str = Query("", description="Search by ID, title, vendor, department"),
+def get_risk_works(
+    page: int = Query(1, ge=1, description="Page number"),
+    pageSize: int = Query(12, ge=1, le=1000, description="Items per page"),
+    riskTier: str = Query("ALL", description="Risk tier: CRITICAL, HIGH, MEDIUM, LOW, or ALL"),
     state: str = Query("ALL", description="State code or ALL"),
     district: str = Query("ALL", description="District name or ALL"),
-    category: str = Query("ALL", description="Procurement category or ALL"),
-    agency: str = Query("ALL", description="Vendor / Agency or ALL"),
-    riskTier: Optional[str] = Query(None, description="CRITICAL, HIGH, MEDIUM, LOW, or ALL"),
+    category: str = Query("ALL", description="Category or ALL"),
+    agency: str = Query("ALL", description="Agency or ALL"),
+    search: str = Query("", description="Search term"),
+    sortBy: str = Query("riskScore", description="Field to sort by"),
+    sortOrder: str = Query("desc", description="asc or desc"),
+    user: Optional[User] = Depends(get_current_user_optional),
+):
+    return analytics_service.query_works(
+        search=search,
+        state=state,
+        district=district,
+        category=category,
+        agency=agency,
+        riskTier=riskTier,
+        sortBy=sortBy,
+        sortOrder=sortOrder,
+        page=page,
+        pageSize=pageSize,
+        user=user,
+    )
+
+
+@api_router.get("/works")
+def query_works(
+    search: str = Query("", description="Search term for ID, description, location"),
+    state: str = Query("ALL", description="State code or ALL"),
+    district: str = Query("ALL", description="District name or ALL"),
+    category: str = Query("ALL", description="Sector category or ALL"),
+    agency: str = Query("ALL", description="Implementing agency or ALL"),
     riskLevel: Optional[str] = Query(None, description="CRITICAL, HIGH, MEDIUM, LOW, or ALL"),
+    riskTier: Optional[str] = Query(None, description="CRITICAL, HIGH, MEDIUM, LOW, or ALL"),
     minScore: int = Query(0, ge=0, le=100),
     maxScore: int = Query(100, ge=0, le=100),
     sortBy: str = Query("riskScore", description="Field to sort by"),
@@ -204,96 +227,93 @@ def query_tenders(
     )
 
 
-@api_router.get("/tenders/{tender_id}")
-@api_router.get("/works/{tender_id}")
-def get_tender(tender_id: str, user: Optional[User] = Depends(get_current_user_optional)):
+@api_router.get("/analytics")
+def get_analytics(user: Optional[User] = Depends(get_current_user_optional)):
+    return analytics_service.get_scoped_analytics(user)
+
+
+@api_router.get("/works/{work_id}")
+def get_work(work_id: str, user: Optional[User] = Depends(get_current_user_optional)):
     try:
-        detail = analytics_service.get_work_detail(tender_id, user=user)
+        detail = analytics_service.get_work_detail(work_id, user=user)
     except PermissionError:
         raise HTTPException(
             status_code=403,
-            detail=f"Access forbidden: Tender {tender_id} is outside your authorized jurisdiction.",
+            detail=f"Access forbidden: Work {work_id} is outside your authorized jurisdiction.",
         )
     if not detail:
-        raise HTTPException(status_code=404, detail=f"Tender {tender_id} not found.")
+        raise HTTPException(status_code=404, detail=f"Work {work_id} not found.")
     return detail
 
 
 @api_router.get("/compare/{id_a}/{id_b}")
-def compare_tenders(id_a: str, id_b: str, user: Optional[User] = Depends(get_current_user_optional)):
+def compare_works(id_a: str, id_b: str, user: Optional[User] = Depends(get_current_user_optional)):
     try:
-        tender_a = analytics_service.get_work_detail(id_a, user=user)
-        tender_b = analytics_service.get_work_detail(id_b, user=user)
+        work_a = analytics_service.get_work_detail(id_a, user=user)
+        work_b = analytics_service.get_work_detail(id_b, user=user)
     except PermissionError:
         raise HTTPException(
             status_code=403,
-            detail="Access forbidden: One or both procurements are outside your authorized jurisdiction.",
+            detail="Access forbidden: One or both works are outside your authorized jurisdiction.",
         )
 
-    if not tender_a or not tender_b:
+    if not work_a or not work_b:
         missing = []
-        if not tender_a:
+        if not work_a:
             missing.append(id_a)
-        if not tender_b:
+        if not work_b:
             missing.append(id_b)
-        raise HTTPException(status_code=404, detail=f"Tender(s) not found: {', '.join(missing)}")
+        raise HTTPException(status_code=404, detail=f"Work(s) not found: {', '.join(missing)}")
 
+    # Calculate token overlap
     import re
-    stop_words = {"of", "at", "and", "the", "for", "with", "to", "a", "in", "on", "procurement", "supply", "works"}
-    tokens_a = set(re.findall(r"\b[a-zA-Z0-9]{3,}\b", tender_a["description"].lower())) - stop_words
-    tokens_b = set(re.findall(r"\b[a-zA-Z0-9]{3,}\b", tender_b["description"].lower())) - stop_words
+    stop_words = {"of", "at", "and", "the", "for", "with", "to", "a", "in", "on", "construction", "works", "work"}
+    tokens_a = set(re.findall(r"\b[a-zA-Z0-9]{3,}\b", work_a["description"].lower())) - stop_words
+    tokens_b = set(re.findall(r"\b[a-zA-Z0-9]{3,}\b", work_b["description"].lower())) - stop_words
 
     union = tokens_a | tokens_b
     intersection = tokens_a & tokens_b
     desc_overlap = int(round((len(intersection) / len(union) * 100.0))) if union else 0
 
-    cost_a = tender_a["sanctionedAmount"]
-    cost_b = tender_b["sanctionedAmount"]
+    cost_a = work_a["sanctionedAmount"]
+    cost_b = work_b["sanctionedAmount"]
     cost_delta = int(round(abs(cost_a - cost_b) / max(cost_a, cost_b, 1) * 100.0))
     cost_match = cost_delta <= 15
 
-    same_state = tender_a["state"] == tender_b["state"]
-    same_dist = tender_a["district"] == tender_b["district"]
-    same_cat = tender_a["category"] == tender_b["category"]
-    same_vendor = tender_a["vendorName"] == tender_b["vendorName"]
-    same_dept = tender_a.get("department") == tender_b.get("department")
+    same_state = work_a["state"] == work_b["state"]
+    same_dist = work_a["district"] == work_b["district"]
+    same_cat = work_a["category"] == work_b["category"]
+    same_agency = work_a["agency"] == work_b["agency"]
 
     attributes = [
-        {"key": "Category", "a": tender_a["category"], "b": tender_b["category"], "match": same_cat},
-        {"key": "Department", "a": tender_a.get("department", "General"), "b": tender_b.get("department", "General"), "match": same_dept},
-        {"key": "State", "a": tender_a["state"], "b": tender_b["state"], "match": same_state},
-        {"key": "District", "a": tender_a["district"], "b": tender_b["district"], "match": same_dist},
-        {"key": "Winning Vendor", "a": tender_a["vendorName"], "b": tender_b["vendorName"], "match": same_vendor},
-        {"key": "Awarded Value", "a": cost_a, "b": cost_b, "match": cost_match, "money": True, "note": f"{cost_delta}% delta"},
-        {"key": "Payment Amount", "a": tender_a["expenditure"], "b": tender_b["expenditure"], "match": abs(tender_a["expenditure"] - tender_b["expenditure"]) / max(tender_a["expenditure"], tender_b["expenditure"], 1) <= 0.15, "money": True},
-        {"key": "Title / Spec Overlap", "a": tender_a["description"], "b": tender_b["description"], "match": desc_overlap >= 40, "note": f"{desc_overlap}% token overlap", "desc": True},
+        {"key": "Category", "a": work_a["category"], "b": work_b["category"], "match": same_cat},
+        {"key": "State", "a": work_a["state"], "b": work_b["state"], "match": same_state},
+        {"key": "District", "a": work_a["district"], "b": work_b["district"], "match": same_dist},
+        {"key": "Implementing Agency", "a": work_a["agency"], "b": work_b["agency"], "match": same_agency},
+        {"key": "Sanctioned Amount", "a": cost_a, "b": cost_b, "match": cost_match, "money": True, "note": f"{cost_delta}% apart"},
+        {"key": "Expenditure", "a": work_a["expenditure"], "b": work_b["expenditure"], "match": abs(work_a["expenditure"] - work_b["expenditure"]) / max(work_a["expenditure"], work_b["expenditure"], 1) <= 0.15, "money": True},
+        {"key": "Description overlap", "a": work_a["description"], "b": work_b["description"], "match": desc_overlap >= 40, "note": f"{desc_overlap}% token overlap", "desc": True},
     ]
 
     similarity = int(round(min(98.0,
         (22.0 if same_cat else 0.0) +
         (16.0 if same_state else 0.0) +
         (14.0 if same_dist else 0.0) +
-        (10.0 if same_vendor else 0.0) +
-        (8.0 if same_dept else 0.0) +
-        (15.0 if cost_match else max(0.0, 15.0 - cost_delta / 4.0)) +
-        desc_overlap * 0.15
+        (10.0 if same_agency else 0.0) +
+        (18.0 if cost_match else max(0.0, 18.0 - cost_delta / 4.0)) +
+        desc_overlap * 0.25
     )))
 
     matches = [attr["key"] for attr in attributes if attr["match"]]
     return {
-        "a": tender_a,
-        "b": tender_b,
+        "a": work_a,
+        "b": work_b,
         "attributes": attributes,
         "similarity": similarity,
         "descOverlap": desc_overlap,
         "costDelta": cost_delta,
         "matches": matches,
     }
-
-
-@api_router.get("/analytics")
-def get_analytics(user: Optional[User] = Depends(get_current_user_optional)):
-    return analytics_service.get_scoped_analytics(user)
 
 
 MAX_UPLOAD_SIZE = 25 * 1024 * 1024  # 25 MB
@@ -308,20 +328,26 @@ ALLOWED_CSV_CONTENT_TYPES = {
 
 @api_router.post("/analyze")
 async def analyze_uploaded_csv(file: UploadFile = File(...)):
-    """Upload a new procurement CSV to re-run the complete analytical pipeline."""
+    """
+    Upload a new MPLADS CSV to re-run the complete analytical pipeline.
+    Enforces a strict 25 MB file size limit and validates CSV file format.
+    """
+    # 1. Filename validation
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(
             status_code=400,
             detail="Invalid file format. Only .csv files are supported.",
         )
 
+    # 2. Content-type check if provided
     if file.content_type and file.content_type.lower() not in ALLOWED_CSV_CONTENT_TYPES:
         raise HTTPException(
             status_code=400,
             detail=f"Unsupported content type '{file.content_type}'. Must be a CSV document.",
         )
 
-    chunk_size = 1024 * 1024
+    # 3. Stream in chunks to prevent unbounded memory allocation
+    chunk_size = 1024 * 1024  # 1 MB chunk
     total_bytes = 0
     chunks = []
 
@@ -342,6 +368,7 @@ async def analyze_uploaded_csv(file: UploadFile = File(...)):
 
     content = b"".join(chunks)
 
+    # 4. Parse CSV format
     try:
         df = pd.read_csv(io.BytesIO(content))
     except Exception as e:
@@ -350,11 +377,12 @@ async def analyze_uploaded_csv(file: UploadFile = File(...)):
     if df.empty:
         raise HTTPException(status_code=400, detail="Uploaded CSV file contains no data rows.")
 
+    # 5. Ingest and re-run pipeline
     try:
         result = analytics_service.analyze_dataset(df)
         return {
             "status": "success",
-            "message": f"Successfully ingested and evaluated {result['total_tenders']} procurement records.",
+            "message": f"Successfully ingested and scored {result['total_works']} works.",
             "metrics": result,
         }
     except Exception as e:

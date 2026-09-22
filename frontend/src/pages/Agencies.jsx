@@ -26,17 +26,17 @@ function AgencyList() {
   const navigate = useNavigate();
   const [rows, setRows] = useState(null);
   useEffect(() => { api.getAgencies().then(setRows); }, []);
-  if (!rows) return <Loader label="Analyzing procurement vendors…" />;
+  if (!rows) return <Loader label="Analyzing implementing agencies…" />;
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Vendor & Agency Intelligence" subtitle="Behavioral profiling, win rates, and anomaly detection across suppliers and contractors." testId="agencies-page" />
+      <PageHeader title="Implementing Agency Intelligence" subtitle="Behavioral and financial profiling of implementing agencies." testId="agencies-page" />
       <Panel>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-header border-y border-hairline text-[#737987] text-[11px] uppercase tracking-wider">
-                {['Vendor / Agency', 'Tenders Won', 'Total Value', 'Avg Value', 'Avg Risk', 'Delay %', 'Anomaly Rate', ''].map((h, i) => <th key={i} className="text-left font-medium px-4 py-2.5">{h}</th>)}
+                {['Agency', 'Projects', 'Total Value', 'Avg Cost', 'Avg Risk', 'Delay %', 'Anomaly Rate', ''].map((h, i) => <th key={i} className="text-left font-medium px-4 py-2.5">{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -88,34 +88,26 @@ function AgencyDetail({ id }) {
 
   return (
     <div className="space-y-6">
-      <Crumbs items={[{ label: 'Vendors', to: '/agencies' }, { label: agency.name }]} />
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <button onClick={() => navigate('/agencies')} className="mt-1 w-8 h-8 rounded-md border border-hairline bg-surface flex items-center justify-center text-[#A0A5B0] hover:text-[#EDEDED] transition-colors"><ArrowLeft size={16} /></button>
-          <div>
-            <div className="text-[11px] uppercase tracking-wider text-[#737987]">Vendor Intelligence</div>
-            <h1 className="text-2xl font-semibold tracking-tight text-[#EDEDED]">{agency.name}</h1>
-            <p className="text-sm text-[#A0A5B0] mt-1 font-mono">{agency.id} · {agency.projects} tenders won · {formatCr(agency.value)} total awarded value</p>
-          </div>
+      <Crumbs items={[{ label: 'Agencies', to: '/agencies' }, { label: agency.name }]} />
+      <div className="flex items-start gap-3">
+        <button onClick={() => navigate('/agencies')} className="mt-1 w-8 h-8 rounded-md border border-hairline bg-surface flex items-center justify-center text-[#A0A5B0] hover:text-[#EDEDED] transition-colors"><ArrowLeft size={16} /></button>
+        <div>
+          <div className="text-[11px] uppercase tracking-wider text-[#737987]">Agency Intelligence</div>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#EDEDED]">{agency.name}</h1>
+          <p className="text-sm text-[#A0A5B0] mt-1 font-mono">{agency.id} · {agency.projects} works · {formatCr(agency.value)} total value</p>
         </div>
-        <button
-          onClick={() => navigate('/relationships')}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-[#16191E] border border-hairline hover:border-brand text-[#EDEDED] transition-colors"
-        >
-          View in Procurement Network →
-        </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Stat label="Average Risk" value={agency.avgRisk} accent={riskColor(agency.avgRisk)} />
-        <Stat label="Average Tender Value" value={formatINR(agency.avgCost)} />
+        <Stat label="Average Cost" value={formatINR(agency.avgCost)} />
         <Stat label="Delay Rate" value={formatPct(agency.delayPct, 1)} accent="#F59638" />
         <Stat label="Anomaly Rate" value={formatPct(agency.anomalyRate, 1)} accent="#F15252" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Panel>
-          <PanelHeader title="Risk Distribution" subtitle="Tenders by risk tier" />
+          <PanelHeader title="Risk Distribution" subtitle="Works by risk tier" />
           <div className="p-5 flex items-center gap-6">
             <div className="w-[150px] h-[150px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -139,7 +131,7 @@ function AgencyDetail({ id }) {
         </Panel>
 
         <Panel>
-          <PanelHeader title="Sector Distribution" subtitle="Tenders by category" />
+          <PanelHeader title="Project Distribution" subtitle="Works by category" />
           <div className="p-4 h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={catData} margin={{ top: 8, right: 8, left: -14, bottom: 30 }}>
@@ -155,12 +147,12 @@ function AgencyDetail({ id }) {
       </div>
 
       <Panel>
-        <PanelHeader title="High-Priority Tenders" subtitle={`Top flagged tenders awarded to ${agency.name}`} />
+        <PanelHeader title="High-Risk Works" subtitle={`Top works executed by ${agency.name}`} />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-header border-y border-hairline text-[#737987] text-[11px] uppercase tracking-wider">
-                {['Risk', 'Tender ID', 'Description', 'District', 'Score', ''].map((h, i) => <th key={i} className="text-left font-medium px-4 py-2.5">{h}</th>)}
+                {['Risk', 'Work ID', 'Description', 'District', 'Score', ''].map((h, i) => <th key={i} className="text-left font-medium px-4 py-2.5">{h}</th>)}
               </tr>
             </thead>
             <tbody>

@@ -86,9 +86,9 @@ export default function SentinelAI() {
             <Sparkles size={18} className="text-ai" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-[#EDEDED]">ProcureGuard AI</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-[#EDEDED]">Sentinel AI</h1>
             <p className="text-xs text-[#A0A5B0]">
-              Grounded analytical assistant for public procurement tenders, vendor concentration, and contract integrity.
+              Grounded analytical assistant for MPLADS works, expenditure signals, and risk patterns.
             </p>
           </div>
         </div>
@@ -118,8 +118,8 @@ export default function SentinelAI() {
               How can I help you investigate?
             </h2>
             <p className="text-sm text-[#737987] mt-1 max-w-md">
-              ProcureGuard AI queries live multi-signal analytics (bid prices, competition, vendor concentration, and linkages)
-              across 5,000 synthetic procurement records.
+              Sentinel AI queries live multi-signal analytics (costs, timelines, duplicates, agencies)
+              across 3,000 synthetic MPLADS records.
             </p>
 
             {/* Featured shortcut banner */}
@@ -133,7 +133,7 @@ export default function SentinelAI() {
                     High-Priority Investigation Shortcut
                   </div>
                   <div className="text-[11px] text-[#A0A5B0]">
-                    Inspect the highest composite risk tender (TND-2026-01842, Score: 84/100) with complete dossier.
+                    Inspect the highest composite risk project (W-11261, Score: 84/100) with complete dossier.
                   </div>
                 </div>
               </div>
@@ -186,7 +186,7 @@ export default function SentinelAI() {
                 />
               ))}
               <span className="text-[11px] text-[#A0A5B0] ml-1">
-                ProcureGuard is retrieving analytical evidence…
+                Sentinel is retrieving analytical evidence…
               </span>
             </div>
           </div>
@@ -213,7 +213,7 @@ export default function SentinelAI() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && send()}
-            placeholder="Ask about TND-2026-01842, critical tenders, vendor concentration, or review priorities…"
+            placeholder="Ask about W-11261, critical works, risky states, duplicate works, or review priorities…"
             className="flex-1 bg-transparent text-sm text-[#EDEDED] placeholder:text-[#5C616D] outline-none"
             data-testid="ai-input"
           />
@@ -227,7 +227,7 @@ export default function SentinelAI() {
           </button>
         </div>
         <p className="text-[10px] text-[#5C616D] text-center mt-2">
-          Responses are strictly grounded in 5,000 verified procurement demonstration records. Analytical signals do not constitute proof of fraud or misconduct.
+          Responses are strictly grounded in 3,000 verified MPLADS demonstration records. Analytical signals do not constitute proof of fraud or misconduct.
         </p>
       </div>
     </div>

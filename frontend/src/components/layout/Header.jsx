@@ -41,23 +41,23 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
   // Role and scope resolution
   const role = user?.role || 'MINISTRY';
   let scopeLabel = 'National Scope · All India';
-  let roleTitle = 'CENTRAL PROCUREMENT VIGILANCE';
+  let roleTitle = 'MINISTRY (MoSPI)';
   let ScopeIcon = Landmark;
   let scopeColor = '#4D8CFF';
 
   if (role === 'STATE_AUTHORITY') {
     scopeLabel = `${user?.state || 'Karnataka'} · State Scope`;
-    roleTitle = 'STATE PROCUREMENT NODAL';
+    roleTitle = 'STATE NODAL AUTHORITY';
     ScopeIcon = Building;
     scopeColor = '#F3D35E';
   } else if (role === 'DISTRICT_AUTHORITY') {
     scopeLabel = `${user?.district || 'Bengaluru Urban'} · District Scope`;
-    roleTitle = 'DISTRICT TENDER AUTHORITY';
+    roleTitle = 'DISTRICT AUTHORITY';
     ScopeIcon = MapPin;
     scopeColor = '#52C47E';
   } else if (role === 'MP') {
-    scopeLabel = `${user?.constituency || 'Vigilance'} · Special Investigation`;
-    roleTitle = 'SPECIAL INVESTIGATOR';
+    scopeLabel = `${user?.constituency || 'Bengaluru Urban PC'} · My Projects`;
+    roleTitle = 'MEMBER OF PARLIAMENT';
     ScopeIcon = Award;
     scopeColor = '#8B5CF6';
   }
@@ -81,7 +81,7 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-risk-low opacity-60" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-risk-low" />
             </span>
-            LIVE ANALYTICS · SYNTHETIC DATASET
+            LIVE ANALYTICS
           </div>
         </div>
 
@@ -109,7 +109,7 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
             value={q}
             onChange={(e) => { setQ(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
-            placeholder="Search tender ID, vendor, department..."
+            placeholder="Search work ID, district, agency..."
             className="flex-1 bg-transparent text-[13px] text-[#EDEDED] placeholder:text-[#5C616D] outline-none"
           />
           <kbd className="hidden lg:inline text-[10px] text-[#5C616D] font-mono border border-hairline rounded px-1">/</kbd>
@@ -117,9 +117,9 @@ export const Header = ({ title = 'Command Center', onOpenSidebar }) => {
         {open && q && (
           <div className="absolute top-11 left-0 right-0 bg-[#0D0F12] border border-hairline rounded-md shadow-[0_4px_24px_rgba(0,0,0,0.6)] overflow-hidden z-40" data-testid="search-results">
             {results.length === 0 ? (
-              <div className="px-4 py-4 text-xs text-[#737987]">No matching tenders found.</div>
+              <div className="px-4 py-4 text-xs text-[#737987]">No matching works found.</div>
             ) : results.map((w) => {
-              const t = RISK_TIERS[w.riskTier] || RISK_TIERS.LOW;
+              const t = RISK_TIERS[w.riskTier];
               return (
                 <button key={w.id} onMouseDown={() => go(w.id)} className="w-full text-left px-3 py-2.5 hover:bg-[#16191E] flex items-center gap-3 border-b border-divider last:border-0">
                   <span className="font-mono text-xs font-semibold" style={{ color: t.color }}>{w.riskScore}</span>

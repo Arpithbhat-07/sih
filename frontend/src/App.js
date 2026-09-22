@@ -18,7 +18,6 @@ import Investigations from "@/pages/Investigations";
 import SentinelAI from "@/pages/SentinelAI";
 import DataHealth from "@/pages/DataHealth";
 import Settings from "@/pages/Settings";
-import Relationships from "@/pages/Relationships";
 
 function App() {
   return (
@@ -48,17 +47,11 @@ function App() {
               <Route path="/risk" element={<RiskMonitor />} />
               <Route path="/works" element={<WorkExplorer />} />
               <Route path="/works/:id" element={<WorkInvestigation />} />
-              <Route path="/tenders" element={<WorkExplorer />} />
-              <Route path="/tenders/:id" element={<WorkInvestigation />} />
               <Route path="/compare/:idA/:idB" element={<ComparePage />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/agencies" element={<Agencies />} />
               <Route path="/agencies/:id" element={<Agencies />} />
-              <Route path="/vendors" element={<Agencies />} />
-              <Route path="/vendors/:id" element={<Agencies />} />
-              <Route path="/relationships" element={<Relationships />} />
-              <Route path="/network" element={<Relationships />} />
               <Route path="/districts" element={<Districts />} />
               <Route path="/investigations" element={<Investigations />} />
               <Route path="/ai" element={<SentinelAI />} />

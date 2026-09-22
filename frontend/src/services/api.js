@@ -1,5 +1,5 @@
-// Service/data-access layer for ProcureGuard.
-// Connects React UI to live FastAPI REST backend with graceful fallback.
+// Service/data-access layer for MPLADS Sentinel.
+// Connects React UI to live FastAPI REST backend with graceful demo fallback.
 
 import axios from 'axios';
 import * as mockData from '../data/mockData';
@@ -56,7 +56,7 @@ apiClient.interceptors.response.use(
 let hasLoggedFallback = false;
 function logFallback(endpoint, err) {
   if (!hasLoggedFallback) {
-    console.warn(`[ProcureGuard] API unavailable at ${API_BASE_URL} (${endpoint}) — using demo fallback`, err?.message || err);
+    console.warn(`[MPLADS Sentinel] API unavailable at ${API_BASE_URL} (${endpoint}) — using demo fallback`, err?.message || err);
     hasLoggedFallback = true;
   }
 }
@@ -281,10 +281,7 @@ export async function getExpenditureTrend() {
 export async function getStateAggregates() {
   try {
     const res = await apiClient.get('/states');
-    return (res.data || []).map((s) => ({
-      ...s,
-      riskTier: s.riskTier || (s.highRisk >= 4 ? 'HIGH' : s.highRisk >= 1 ? 'MEDIUM' : 'LOW'),
-    }));
+    return res.data;
   } catch (err) {
     logFallback('/states', err);
     return mockData.stateAggregates;
@@ -452,25 +449,6 @@ export async function getAgencyById(id) {
   return list.find((a) => a.id === id || a.name === id) || null;
 }
 
-// ---------- Relationships / Procurement Network ----------
-export async function getRelationships() {
-  try {
-    const res = await apiClient.get('/relationships');
-    return res.data;
-  } catch (err) {
-    logFallback('/relationships', err);
-    return { nodes: [], links: [] };
-  }
-}
-
-// Procurement aliases
-export const getTenders = queryWorks;
-export const getTenderDetail = getWorkDetail;
-export const getVendors = getAgencies;
-export const getVendorById = getAgencyById;
-export const normalizeTender = normalizeWork;
-export const normalizeVendor = normalizeAgency;
-
 // ---------- Duplicates ----------
 export async function getDuplicates(limit = 50) {
   try {
@@ -552,30 +530,6 @@ function queryWorksFallback({
 }
 
 function getWorkDetailFallback(id) {
-  if (id === 'TND-2026-01842') {
-    return normalizeWork({
-      id: 'TND-2026-01842',
-      workId: 'TND-2026-01842',
-      description: 'Supply and Installation of IT Infrastructure and Enterprise Hardware',
-      department: 'Information Technology Directorate',
-      category: 'Information Technology',
-      state: 'Maharashtra',
-      stateCode: 'IN-MH',
-      district: 'Mumbai Suburban',
-      agency: 'V-1042 Enterprise Logistics',
-      vendorName: 'V-1042 Enterprise Logistics',
-      sanctionedAmount: 3378000,
-      awardedValue: 3378000,
-      expenditure: 3378000,
-      bidderCount: 2,
-      riskScore: 84,
-      riskTier: 'CRITICAL',
-      costDeviation: 65.8,
-      delayed: false,
-      primarySignal: 'Cost anomaly (+65.8% above peer median)',
-      status: 'In Progress',
-    });
-  }
   const w = mockData.getWorkById(id);
   if (!w) return null;
   const breakdown = mockData.buildBreakdown(w);

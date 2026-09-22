@@ -7,22 +7,22 @@ import { Header } from './Header';
 const TITLES = {
   '/dashboard': 'Command Center',
   '/risk': 'Risk Monitor',
-  '/works': 'Tender Explorer',
-  '/analytics': 'Procurement Analytics',
+  '/works': 'Work Explorer',
+  '/analytics': 'Programme Analytics',
   '/alerts': 'Intelligence Alerts',
-  '/agencies': 'Vendor Intelligence',
+  '/agencies': 'Implementing Agencies',
   '/districts': 'District Monitoring',
   '/investigations': 'Investigation Queue',
-  '/ai': 'ProcureGuard AI',
+  '/ai': 'Sentinel AI',
   '/data-health': 'Data Health',
   '/settings': 'Settings',
 };
 
 function titleFor(pathname) {
-  if (pathname.startsWith('/works/')) return 'Tender Investigation';
-  if (pathname.startsWith('/compare/')) return 'Bid Comparison';
-  if (pathname.startsWith('/agencies/')) return 'Vendor Intelligence';
-  return TITLES[pathname] || 'ProcureGuard';
+  if (pathname.startsWith('/works/')) return 'Work Investigation';
+  if (pathname.startsWith('/compare/')) return 'Duplicate Comparison';
+  if (pathname.startsWith('/agencies/')) return 'Agency Intelligence';
+  return TITLES[pathname] || 'MPLADS Sentinel';
 }
 
 export const AppShell = () => {
@@ -70,8 +70,8 @@ export const AppShell = () => {
             >
               <Outlet />
               <footer className="mt-10 pt-5 border-t border-divider flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span className="text-[11px] text-[#5C616D]">ProcureGuard • AI-Powered Public Procurement Anomaly & Investigation Intelligence</span>
-                <span className="text-[11px] text-[#5C616D] font-mono">Synthetic Demonstration Dataset</span>
+                <span className="text-[11px] text-[#5C616D]">MPLADS Sentinel — AI-assisted decision support for public programme monitoring</span>
+                <span className="text-[11px] text-[#5C616D] font-mono">Prototype • SIH 2026 · Synthetic Demonstration Dataset</span>
               </footer>
             </motion.div>
           </AnimatePresence>

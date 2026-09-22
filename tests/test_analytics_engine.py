@@ -1,7 +1,6 @@
 """
-Unit Tests for ProcureGuard Machine Learning & Analytics Engine.
-Verifies preprocessing, modular anomaly detectors, composite risk scoring ranges,
-and multi-entity graph pipeline integrity.
+Unit Tests for MPLADS Sentinel Machine Learning & Analytics Engine.
+Verifies preprocessing, anomaly detectors, risk scoring ranges, and API integrity.
 """
 
 import pytest
@@ -11,169 +10,178 @@ import math
 from pathlib import Path
 
 from backend.ml.preprocessing import preprocess_dataframe, load_dataset, validate_schema
-from backend.ml.price_anomaly import PriceAnomalyDetector
-from backend.ml.bid_anomaly import BidAnomalyDetector
-from backend.ml.vendor_anomaly import VendorAnomalyDetector
-from backend.ml.repeated_award import RepeatedAwardDetector
-from backend.ml.relationship_anomaly import RelationshipAnomalyDetector
-from backend.ml.contract_anomaly import ContractAnomalyDetector
-from backend.ml.risk_engine import RiskEngine, tier_for_score, RISK_TIERS
+from backend.ml.cost_anomaly import CostAnomalyDetector
+from backend.ml.delay_detection import DelayDetector
+from backend.ml.duplicate_detection import DuplicateCandidateDetector
+from backend.ml.agency_anomaly import AgencyAnomalyDetector
+from backend.ml.risk_engine import RiskEngine, tier_for_score
 from backend.services.analytics import AnalyticsService
 
-DATA_PATH = Path(__file__).parent.parent / "backend" / "data" / "procurement_synthetic.csv"
+DATA_PATH = Path(__file__).parent.parent / "backend" / "data" / "mplads_synthetic.csv"
 
 
 def test_schema_validation():
-    """Verify schema validator checks required procurement fields."""
+    """Verify schema validator checks required fields."""
     valid_df = pd.DataFrame({
-        "tender_id": ["TND-01"],
-        "awarded_value": [1000000],
-        "payment_amount": [900000],
+        "work_id": ["W-01"],
+        "sanctioned_amount": [1000000],
+        "expenditure": [900000],
     })
     is_valid, missing_req, _ = validate_schema(valid_df)
     assert is_valid is True
     assert len(missing_req) == 0
 
-    invalid_df = pd.DataFrame({"title": ["Test Procurement"]})
+    invalid_df = pd.DataFrame({"work_id": ["W-02"]})
     is_valid, missing_req, _ = validate_schema(invalid_df)
     assert is_valid is False
-    assert "tender_id" in missing_req or "awarded_value" in missing_req
+    assert "sanctioned_amount" in missing_req
 
 
 def test_dataset_loading_and_preprocessing():
-    """Verify that dataset loads cleanly with 5,000 records and no missing financials."""
+    """Verify that dataset loads cleanly with correct columns and no row loss."""
     assert DATA_PATH.exists(), f"Dataset not found at {DATA_PATH}"
     df = load_dataset(str(DATA_PATH))
-    assert len(df) == 5000
-    assert "awarded_value" in df.columns
-    assert "payment_amount" in df.columns
-    assert "tender_id" in df.columns
+    assert len(df) == 3000
+    assert "sanctioned_amount" in df.columns
+    assert "expenditure" in df.columns
     assert "utilization" in df.columns
-    assert df["awarded_value"].isnull().sum() == 0
-    assert df["payment_amount"].isnull().sum() == 0
+    assert "delay_days" in df.columns
+    assert df["sanctioned_amount"].isnull().sum() == 0
+    assert df["expenditure"].isnull().sum() == 0
 
 
-def test_price_anomaly_detector():
-    """Verify price anomaly detector produces bounded 0-25 scores and transparent metrics."""
+def test_cost_anomaly_detector():
+    """Verify cost anomaly detector produces bounded scores and interpretable outputs."""
     df = load_dataset(str(DATA_PATH))
-    detector = PriceAnomalyDetector()
+    detector = CostAnomalyDetector()
     detector.fit(df)
 
-    # Benchmark normal tender
-    normal_row = df[df["awarded_value"] <= df["estimated_value"]].iloc[0]
-    res_normal = detector.analyze_tender(normal_row)
-    assert 0 <= res_normal["score"] <= 25
-    assert "deviation_percent" in res_normal
-    assert "baseline" in res_normal
+    # Test baseline work
+    normal_work = df[df["cost_deviation"] <= 0].iloc[0]
+    res_normal = detector.analyze_work(normal_work)
+    assert 0 <= res_normal["score"] <= 35
+    assert res_normal["is_anomaly"] is False
+    assert 0.0 <= res_normal["confidence"] <= 1.0
 
-    # High anomaly tender (TND-2026-01842)
-    high_row = df[df["tender_id"] == "TND-2026-01842"].iloc[0]
-    res_high = detector.analyze_tender(high_row)
-    assert res_high["score"] == 25
+    # Test anomalous high-cost work
+    high_work = df[df["cost_deviation"] > 40].iloc[0]
+    res_high = detector.analyze_work(high_work)
+    assert 0 <= res_high["score"] <= 35
     assert res_high["is_anomaly"] is True
-    assert res_high["deviation_percent"] > 30.0
+    assert "baseline" in res_high
+    assert res_high["confidence"] > 0.70
 
 
-def test_bid_anomaly_detector():
-    """Verify bid anomaly detector checks bidder participation against category baselines."""
+def test_delay_detector():
+    """Verify delay detector properly computes expected vs actual days."""
     df = load_dataset(str(DATA_PATH))
-    detector = BidAnomalyDetector()
+    detector = DelayDetector()
     detector.fit(df)
 
-    low_bid_row = df[df["bidder_count"] <= 2].iloc[0]
-    res_low = detector.analyze_tender(low_bid_row)
-    assert 0 <= res_low["score"] <= 20
-    assert res_low["is_anomaly"] is True
-    assert "peer_median" in res_low
+    # Delayed work
+    delayed_works = df[df["delayed"] == True]
+    assert len(delayed_works) > 0
+    res_delayed = detector.analyze_work(delayed_works.iloc[0])
+    assert res_delayed["is_anomaly"] is True
+    assert 0 <= res_delayed["score"] <= 25
+    assert res_delayed["delay_days"] > 0
+
+    # On-time work
+    ontime_works = df[df["delayed"] == False]
+    res_ontime = detector.analyze_work(ontime_works.iloc[0])
+    assert res_ontime["is_anomaly"] is False
+    assert res_ontime["score"] == 0
 
 
-def test_vendor_anomaly_detector():
-    """Verify vendor behavior profiler generates win rates and bounded risk scores."""
+def test_duplicate_detector():
+    """Verify TF-IDF + structured similarity identifies candidate pairs."""
     df = load_dataset(str(DATA_PATH))
-    detector = VendorAnomalyDetector()
+    detector = DuplicateCandidateDetector(min_similarity_threshold=70)
+    detector.fit_and_detect(df)
+
+    candidates = detector.get_candidates()
+    assert isinstance(candidates, list)
+    assert len(candidates) > 0
+
+    top_candidate = candidates[0]
+    assert "work_a" in top_candidate
+    assert "work_b" in top_candidate
+    assert top_candidate["similarity_score"] >= 70
+    assert top_candidate["classification"] == "POTENTIAL_DUPLICATE"
+
+    # Test work duplicate score bounds
+    work_res = detector.get_work_result(top_candidate["work_a"])
+    assert 0 <= work_res["score"] <= 20
+
+
+def test_agency_anomaly_detector():
+    """Verify agency detector calculates anomaly rates and flags statistical outliers."""
+    df = load_dataset(str(DATA_PATH))
+    detector = AgencyAnomalyDetector()
     detector.fit(df)
+
     profiles = detector.get_profiles()
     assert len(profiles) > 0
-    v = profiles[0]
-    assert "win_rate" in v
-    assert "total_wins" in v
+    assert "agency" in profiles[0]
+    assert "anomaly_rate" in profiles[0]
+    assert "delay_rate" in profiles[0]
 
-    # Test vendor evaluation
-    res = detector.analyze_tender(df.iloc[0])
-    assert 0 <= res["score"] <= 20
-    assert "explanation" in res
-
-
-def test_repeated_award_detector():
-    """Verify repeated award detector flags department-level market concentration."""
-    df = load_dataset(str(DATA_PATH))
-    detector = RepeatedAwardDetector()
-    detector.fit(df)
-    res = detector.analyze_tender(df.iloc[0])
+    # Verify score bounds for an individual work
+    row = df.iloc[0]
+    res = detector.analyze_work(row)
     assert 0 <= res["score"] <= 15
-    assert "department_share_pct" in res
-
-
-def test_relationship_anomaly_detector():
-    """Verify relationship engine builds multi-entity nodes and links."""
-    df = load_dataset(str(DATA_PATH))
-    detector = RelationshipAnomalyDetector()
-    detector.fit_and_build_graph(df)
-    graph = detector.get_network_graph()
-    assert "nodes" in graph
-    assert "links" in graph
-    assert len(graph["nodes"]) >= 30
-    assert len(graph["links"]) >= 10
-
-    res = detector.analyze_tender(df.iloc[0])
-    assert 0 <= res["score"] <= 15
-
-
-def test_contract_anomaly_detector():
-    """Verify contract detector scores payment overruns and execution delays."""
-    df = load_dataset(str(DATA_PATH))
-    detector = ContractAnomalyDetector()
-    detector.fit(df)
-    res = detector.analyze_tender(df.iloc[0])
-    assert 0 <= res["score"] <= 5
 
 
 def test_risk_score_range_and_tier_classification():
-    """Verify 0-100 composite risk scoring matches ProcureGuard tiers."""
-    assert tier_for_score(85) == "CRITICAL"
-    assert tier_for_score(70) == "HIGH"
-    assert tier_for_score(45) == "MEDIUM"
-    assert tier_for_score(15) == "LOW"
+    """CRITICAL: Verify risk score is strictly 0–100 and mapped to valid tiers."""
+    for score in range(0, 101):
+        tier = tier_for_score(score)
+        assert tier in ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 
-    engine = RiskEngine()
-    eval_res = engine.compute_composite_risk(
-        tender_id="TND-TEST",
-        price_eval={"score": 25, "is_anomaly": True, "deviation_percent": 50.0, "explanation": "High price"},
-        bid_eval={"score": 16, "is_anomaly": True, "bidder_count": 2, "peer_median": 5, "explanation": "Low bidders"},
-        vendor_eval={"score": 10, "is_anomaly": True, "win_rate": 40.0, "total_wins": 20, "explanation": "High win rate"},
-        repeated_eval={"score": 15, "is_anomaly": True, "department_share_pct": 55.0, "explanation": "Dominant vendor"},
-        relationship_eval={"score": 10, "is_anomaly": True, "connected_awards": 15, "explanation": "Dense relationship"},
-        contract_eval={"score": 3, "is_anomaly": True, "delay_days": 45, "payment_overrun_pct": 10.0, "explanation": "Delay"},
-    )
-    assert 80 <= eval_res["risk_score"] <= 100
-    assert eval_res["risk_level"] == "CRITICAL"
-    assert len(eval_res["findings"]) >= 5
+    assert tier_for_score(0) == "LOW"
+    assert tier_for_score(29) == "LOW"
+    assert tier_for_score(30) == "MEDIUM"
+    assert tier_for_score(59) == "MEDIUM"
+    assert tier_for_score(60) == "HIGH"
+    assert tier_for_score(79) == "HIGH"
+    assert tier_for_score(80) == "CRITICAL"
+    assert tier_for_score(100) == "CRITICAL"
 
 
 def test_full_analytics_pipeline_no_nan_or_infinities():
-    """Verify AnalyticsService runs end-to-end on 5,000 tenders with 0 NaNs."""
+    """CRITICAL: Verify full service pipeline runs with zero NaN/Infinity values."""
     service = AnalyticsService(str(DATA_PATH))
-    assert len(service.tenders) == 5000
-    assert service.summary["totalTenders"] == 5000
-    assert service.summary["highPriorityCases"] > 0
-    assert len(service.state_aggregates) >= 20
-    assert len(service.department_aggregates) >= 8
-    assert len(service.vendor_aggregates) >= 30
-    assert len(service.alerts) > 0
-    assert len(service.network_graph["nodes"]) > 0
+    summary = service.summary
 
-    # Ensure no NaN or infinite values in summaries
-    for key, val in service.summary.items():
-        if isinstance(val, (float, int)):
-            assert not math.isnan(val)
-            assert not math.isinf(val)
+    assert summary["totalWorks"] == 3000
+    assert summary["highRiskWorks"] > 0
+    assert summary["counts"]["CRITICAL"] > 0
+    assert summary["counts"]["HIGH"] > 0
+    assert summary["counts"]["MEDIUM"] > 0
+    assert summary["counts"]["LOW"] > 0
+
+    for w in service.works:
+        score = w["riskScore"]
+        assert isinstance(score, int)
+        assert 0 <= score <= 100
+        assert w["riskTier"] in ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+        assert not math.isnan(w["utilization"])
+        assert not math.isinf(w["utilization"])
+        assert not math.isnan(w["costDeviation"])
+        assert not math.isinf(w["costDeviation"])
+        assert isinstance(w["breakdown"], list)
+        assert len(w["breakdown"]) == 5
+
+    # Check pagination query works
+    paged = service.query_works(page=1, pageSize=12)
+    assert len(paged["rows"]) == 12
+    assert paged["total"] == 3000
+    assert paged["totalPages"] == 250
+
+    # Check detail view works
+    first_id = service.works[0]["id"]
+    detail = service.get_work_detail(first_id)
+    assert detail is not None
+    assert detail["id"] == first_id
+    assert "similar" in detail
+    assert "financials" in detail

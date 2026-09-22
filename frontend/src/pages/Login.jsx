@@ -7,11 +7,11 @@ import { Wordmark } from '../components/common/Logo';
 const DEMO_ACCOUNTS = [
   {
     role: 'MINISTRY',
-    title: 'Central Directorate',
+    title: 'Ministry (MoSPI)',
     username: 'ministry.demo',
     scope: 'National Scope · All India',
-    worksCount: '5,000 Tenders',
-    description: 'National overview, cross-department anomaly alerts, price deviation intelligence',
+    worksCount: '3,000 Works',
+    description: 'National overview, cross-state anomaly alerts, macro analytics',
     icon: Landmark,
     accent: '#4D8CFF',
   },
@@ -20,8 +20,8 @@ const DEMO_ACCOUNTS = [
     title: 'State Authority',
     username: 'state.ka.demo',
     scope: 'Karnataka · State Scope',
-    worksCount: '417 Tenders',
-    description: 'State Nodal monitoring across 5 districts, local departments, and vendors',
+    worksCount: '261 Works',
+    description: 'State Nodal monitoring across 5 districts and state agencies',
     icon: Building,
     accent: '#F3D35E',
   },
@@ -30,18 +30,18 @@ const DEMO_ACCOUNTS = [
     title: 'District Authority',
     username: 'district.mangalore.demo',
     scope: 'Bengaluru Urban · District Scope',
-    worksCount: '89 Tenders',
-    description: 'District monitoring, tender bidding audits, vendor concentration tracking',
+    worksCount: '65 Works',
+    description: 'District monitoring, local project verification, contractor auditing',
     icon: MapPin,
     accent: '#52C47E',
   },
   {
     role: 'MP',
-    title: 'Special Investigator',
+    title: 'Member of Parliament',
     username: 'mp.demo',
-    scope: 'Bengaluru Urban · Investigation Unit',
-    worksCount: '89 Tenders',
-    description: 'Autonomous vigilance investigation, bidding cartel rings, and contract overruns',
+    scope: 'Bengaluru Urban PC · My Projects',
+    worksCount: '65 Works',
+    description: 'Constituency project tracking, delay signals, fund utilization',
     icon: Award,
     accent: '#8B5CF6',
   },
@@ -101,7 +101,7 @@ export default function Login() {
         <Wordmark />
         <div className="flex items-center gap-2 text-xs font-mono text-[#737987]">
           <Shield size={14} className="text-brand" />
-          PUBLIC PROCUREMENT INTELLIGENCE PLATFORM
+          GOVERNMENT MONITORING DEMO · SIH 2026
         </div>
       </header>
 
@@ -113,13 +113,13 @@ export default function Login() {
             <div>
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#1A1D21] border border-[#272A30] text-[11px] font-mono text-[#A0A5B0] mb-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-                PROCUREMENT OVERSIGHT CONTROL · PORTAL 2.0
+                OFFICIAL ACCESS CONTROL · PORTAL 2.0
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#EDEDED] font-sans">
-                PROCUREGUARD
+                MPLADS SENTINEL
               </h1>
               <p className="text-sm text-[#A0A5B0] mt-1.5 leading-relaxed">
-                AI-Powered Public Procurement Anomaly & Investigation Intelligence Platform.
+                Secure Monitoring & Risk Intelligence Platform for the Members of Parliament Local Area Development Scheme.
               </p>
 
               {/* Security Alert Banner */}
@@ -202,7 +202,7 @@ export default function Login() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-[#1E2126] text-[11px] text-[#5C616D] flex justify-between items-center">
-              <span>Standard Access Key: password is <code className="text-[#A0A5B0] font-mono">demo123</code></span>
+              <span>Prototype Credential: password is <code className="text-[#A0A5B0] font-mono">demo123</code></span>
               <span className="text-risk-low flex items-center gap-1 font-mono">
                 <CheckCircle2 size={12} /> PBKDF2 SECURED
               </span>
@@ -212,7 +212,7 @@ export default function Login() {
           {/* Right Column: Demo Accounts Quick Select */}
           <div className="lg:col-span-5 flex flex-col justify-between gap-4">
             <div className="text-xs font-mono uppercase tracking-wider text-[#737987] px-1">
-              Select Authorized Role (1-Click Sign In)
+              Select Demo Persona (1-Click Login)
             </div>
 
             <div className="space-y-3 flex-1 flex flex-col justify-between">
@@ -265,7 +265,7 @@ export default function Login() {
 
       {/* Footer Disclaimer */}
       <footer className="py-4 border-t border-[#1E2126] text-center text-xs text-[#5C616D] px-4 font-mono">
-        Analytical signals do not constitute proof of fraud, corruption, misconduct, or wrongdoing. Final assessment requires authorized human investigation.
+        Analytical signals do not constitute proof of fraud or misconduct. Final assessment requires authorized human investigation.
       </footer>
     </div>
   );

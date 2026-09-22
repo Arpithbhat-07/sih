@@ -28,7 +28,7 @@ def test_root_endpoint():
     response = client.get("/api/")
     assert response.status_code == 200
     data = response.json()
-    assert data["service"] == "ProcureGuard API"
+    assert data["service"] == "MPLADS Sentinel API"
     assert data["status"] == "online"
     assert "disclaimer" in data
     assert_no_nan(data)
@@ -39,9 +39,9 @@ def test_health_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert data["service"] == "ProcureGuard API"
+    assert data["service"] == "MPLADS Sentinel API"
     assert "dataset" in data
-    assert data["dataset"]["records"] == 5000
+    assert data["dataset"]["records"] == 3000
     assert_no_nan(data)
 
 
@@ -49,8 +49,7 @@ def test_summary_endpoint():
     response = client.get("/api/summary")
     assert response.status_code == 200
     data = response.json()
-    assert data["totalWorks"] == 5000
-    assert data.get("totalTenders") == 5000
+    assert data["totalWorks"] == 3000
     assert data["totalSanctioned"] > 0
     assert data["totalExpenditure"] > 0
     assert "criticalWorks" in data
@@ -167,17 +166,6 @@ def test_districts_agencies_categories_alerts():
         assert isinstance(data, list)
         assert len(data) > 0
         assert_no_nan(data)
-
-
-def test_relationships_endpoint():
-    res = client.get("/api/relationships")
-    assert res.status_code == 200
-    data = res.json()
-    assert "nodes" in data
-    assert "links" in data
-    assert len(data["nodes"]) >= 30
-    assert len(data["links"]) >= 10
-    assert_no_nan(data)
 
 
 def test_filters_endpoint():

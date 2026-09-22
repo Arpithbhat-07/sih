@@ -1,7 +1,7 @@
 """
-ProcureGuard - Authentication & Role-Based Access Control (RBAC) Module
+MPLADS Sentinel - Authentication & Role-Based Access Control (RBAC) Module
 Provides password hashing (PBKDF2-SHA256), cryptographic signed session tokens,
-procurement authority user repository, and FastAPI security dependencies.
+demo user repository, and FastAPI security dependencies.
 """
 
 import os
@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-SECRET_KEY = os.environ.get("PROCUREGUARD_AUTH_SECRET", "procureguard-sih-demo-key-2026-secure-token")
+SECRET_KEY = os.environ.get("SENTINEL_AUTH_SECRET", "mplads-sentinel-sih-demo-key-2026-secure-token")
 TOKEN_EXPIRY_SECONDS = 86400 * 7  # 7 days
 
 security = HTTPBearer(auto_error=False)
@@ -80,8 +80,8 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
 class User(BaseModel):
     userId: str
     username: str
-    role: str  # MINISTRY (National Director) | STATE_AUTHORITY | DISTRICT_AUTHORITY | MP (Auditor)
-    scope: str  # NATIONAL | STATE | DISTRICT | AUDITOR
+    role: str  # MINISTRY | STATE_AUTHORITY | DISTRICT_AUTHORITY | MP
+    scope: str  # NATIONAL | STATE | DISTRICT | MP
     state: Optional[str] = None
     district: Optional[str] = None
     constituency: Optional[str] = None
@@ -106,13 +106,13 @@ _DEMO123_HASH = hash_password("demo123")
 DEMO_USERS: Dict[str, Dict[str, Any]] = {
     "ministry.demo": {
         "user": User(
-            userId="USR-NAT-001",
+            userId="USR-MIN-001",
             username="ministry.demo",
             role="MINISTRY",
             scope="NATIONAL",
-            fullName="Chief Procurement Vigilance Officer",
-            designation="Central Public Procurement Oversight Directorate",
-            avatarInitials="CP",
+            fullName="Joint Secretary (Monitoring)",
+            designation="Ministry of Statistics & Programme Implementation (MoSPI)",
+            avatarInitials="MA",
         ),
         "password_hash": _DEMO123_HASH,
     },
@@ -123,8 +123,8 @@ DEMO_USERS: Dict[str, Dict[str, Any]] = {
             role="STATE_AUTHORITY",
             scope="STATE",
             state="Karnataka",
-            fullName="State Procurement Audit Officer",
-            designation="Directorate of State Public Procurements, Karnataka",
+            fullName="State Nodal Officer",
+            designation="Planning & Statistics Department, Karnataka",
             avatarInitials="SK",
         ),
         "password_hash": _DEMO123_HASH,
@@ -137,9 +137,9 @@ DEMO_USERS: Dict[str, Dict[str, Any]] = {
             scope="DISTRICT",
             state="Karnataka",
             district="Bengaluru Urban",
-            fullName="District Tender Oversight Officer",
-            designation="District Procurement Monitoring Cell (Bengaluru Urban)",
-            avatarInitials="DT",
+            fullName="District Authority (Bengaluru / Dakshina Division)",
+            designation="District Planning Cell, Bengaluru Urban",
+            avatarInitials="DA",
         ),
         "password_hash": _DEMO123_HASH,
     },
@@ -151,41 +151,24 @@ DEMO_USERS: Dict[str, Dict[str, Any]] = {
             scope="DISTRICT",
             state="Karnataka",
             district="Bengaluru Urban",
-            fullName="District Tender Oversight Officer",
-            designation="District Procurement Monitoring Cell (Bengaluru Urban)",
-            avatarInitials="DT",
+            fullName="Deputy Commissioner & District Authority",
+            designation="District Planning Cell, Bengaluru Urban",
+            avatarInitials="DB",
         ),
         "password_hash": _DEMO123_HASH,
     },
     "mp.demo": {
         "user": User(
-            userId="USR-INV-002",
+            userId="USR-MP-KA-001",
             username="mp.demo",
             role="MP",
-            scope="AUDITOR",
+            scope="MP",
             state="Karnataka",
-            district="Bengaluru Urban",
-            constituency="Bengaluru Urban PC",
-            mpName="Lead Procurement Auditor",
-            fullName="Senior Procurement Investigator",
-            designation="Autonomous Vigilance & Integrity Investigation Unit",
-            avatarInitials="PI",
-        ),
-        "password_hash": _DEMO123_HASH,
-    },
-    "mp.bangalore.demo": {
-        "user": User(
-            userId="USR-INV-001",
-            username="mp.bangalore.demo",
-            role="MP",
-            scope="AUDITOR",
-            state="Karnataka",
-            district="Bengaluru Urban",
-            constituency="Special Investigation Unit",
-            mpName="Lead Procurement Auditor",
-            fullName="Senior Procurement Investigator",
-            designation="Autonomous Vigilance & Integrity Investigation Unit",
-            avatarInitials="PI",
+            constituency="Bengaluru Urban (PC-29)",
+            mpName="Bengaluru Urban PC",
+            fullName="Hon'ble Member of Parliament",
+            designation="Lok Sabha Constituency: Bengaluru Urban PC",
+            avatarInitials="MP",
         ),
         "password_hash": _DEMO123_HASH,
     },
@@ -193,40 +176,54 @@ DEMO_USERS: Dict[str, Dict[str, Any]] = {
 
 
 def authenticate_user(username: str, password: str) -> Optional[User]:
-    """Validate user credentials against demo repository."""
+    """Verify credentials and return user object if valid."""
     user_entry = DEMO_USERS.get(username.strip().lower())
     if not user_entry:
         return None
-    if verify_password(password, user_entry["password_hash"]):
-        return user_entry["user"]
-    return None
+    if not verify_password(password, user_entry["password_hash"]):
+        return None
+    return user_entry["user"]
 
 
 def get_current_user_optional(
-    creds: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    auth: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Optional[User]:
-    """Retrieve authenticated user if valid token present, otherwise None."""
-    if not creds or not creds.credentials:
+    """
+    Extract authenticated user if Authorization header is present and valid.
+    If no header is passed, returns None (allowing public/backward-compatible calls).
+    If an invalid header is passed, raises HTTP 401 Unauthorized.
+    """
+    if not auth or not auth.credentials:
         return None
-    data = decode_access_token(creds.credentials)
-    if not data:
-        return None
-    username = data.get("sub", "")
-    user_entry = DEMO_USERS.get(username.lower())
-    if user_entry:
-        return user_entry["user"]
-    return None
+
+    token = auth.credentials.strip()
+    data = decode_access_token(token)
+    if not data or "sub" not in data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired authentication token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    username = data.get("sub")
+    user_entry = DEMO_USERS.get(username)
+    if not user_entry:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User session no longer valid.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user_entry["user"]
 
 
 def get_current_user(
-    creds: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    user: Optional[User] = Depends(get_current_user_optional),
 ) -> User:
-    """Strict dependency requiring authenticated user session."""
-    user = get_current_user_optional(creds)
+    """Strict authorization dependency requiring an authenticated user."""
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session invalid or expired. Please authenticate.",
+            detail="Authentication credentials were not provided.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user

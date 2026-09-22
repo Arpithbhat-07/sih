@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, ShieldAlert, Search, BarChart3, Bell,
-  Building2, MapPin, ClipboardList, Sparkles, Activity, Settings, X, Network,
+  Building2, MapPin, ClipboardList, Sparkles, Activity, Settings, X,
 } from 'lucide-react';
 import { Wordmark } from '../common/Logo';
 import { cn } from '../../lib/utils';
@@ -37,9 +37,9 @@ export const Sidebar = ({ onNavigate, onClose, mobile = false }) => {
   // Role-tailored dashboard title
   const dashboardLabel =
     role === 'DISTRICT_AUTHORITY'
-      ? 'District Tenders'
+      ? 'District Center'
       : role === 'MP'
-      ? 'Audit Dossier'
+      ? 'My Works'
       : 'Command Center';
 
   // Role-based permission map
@@ -49,10 +49,10 @@ export const Sidebar = ({ onNavigate, onClose, mobile = false }) => {
       return path !== '/data-health';
     }
     if (role === 'DISTRICT_AUTHORITY') {
-      return ['/dashboard', '/risk', '/works', '/relationships', '/alerts', '/investigations', '/ai', '/settings'].includes(path);
+      return ['/dashboard', '/risk', '/works', '/alerts', '/investigations', '/ai', '/settings'].includes(path);
     }
     if (role === 'MP') {
-      return ['/dashboard', '/risk', '/works', '/relationships', '/agencies', '/alerts', '/ai', '/settings'].includes(path);
+      return ['/dashboard', '/risk', '/works', '/alerts', '/ai', '/settings'].includes(path);
     }
     return true;
   };
@@ -66,23 +66,22 @@ export const Sidebar = ({ onNavigate, onClose, mobile = false }) => {
       section: 'Intelligence',
       items: [
         { to: '/risk', label: 'Risk Monitor', icon: ShieldAlert, testId: 'nav-risk' },
-        { to: '/works', label: 'Tender Explorer', icon: Search, testId: 'nav-works' },
-        { to: '/relationships', label: 'Procurement Network', icon: Network, testId: 'nav-relationships' },
+        { to: '/works', label: 'Work Explorer', icon: Search, testId: 'nav-works' },
         { to: '/analytics', label: 'Analytics', icon: BarChart3, testId: 'nav-analytics' },
         { to: '/alerts', label: 'Alerts', icon: Bell, testId: 'nav-alerts' },
       ],
     },
     {
-      section: 'Entities & Ops',
+      section: 'Operations',
       items: [
-        { to: '/agencies', label: 'Vendors & Agencies', icon: Building2, testId: 'nav-agencies' },
+        { to: '/agencies', label: 'Agencies', icon: Building2, testId: 'nav-agencies' },
         { to: '/districts', label: 'Districts', icon: MapPin, testId: 'nav-districts' },
         { to: '/investigations', label: 'Investigation Queue', icon: ClipboardList, testId: 'nav-investigations' },
       ],
     },
     {
       section: 'AI',
-      items: [{ to: '/ai', label: 'ProcureGuard AI', icon: Sparkles, testId: 'nav-ai', accent: true }],
+      items: [{ to: '/ai', label: 'Sentinel AI', icon: Sparkles, testId: 'nav-ai', accent: true }],
     },
     {
       section: 'System',
@@ -135,7 +134,7 @@ export const Sidebar = ({ onNavigate, onClose, mobile = false }) => {
         <span className="text-[#737987] font-mono">Today, 09:42 AM</span>
       </div>
       <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-hairline bg-[#0D0F12] text-[10px] text-[#737987]">
-        <span className="w-1 h-1 rounded-full bg-ai" /> Synthetic Demonstration Dataset
+        <span className="w-1 h-1 rounded-full bg-ai" /> Prototype • SIH 2026
       </div>
     </div>
   </aside>

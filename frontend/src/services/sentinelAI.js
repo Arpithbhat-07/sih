@@ -42,8 +42,8 @@ export function detectIntent(question = '') {
   const q = question.trim();
   const lower = q.toLowerCase();
 
-  // Match Tender / Work ID: e.g. TND-2026-01842, W-11261, W-10001
-  const workMatch = q.match(/\b(TND-[\w-]+|W-\d{4,6})\b/i);
+  // Match Work ID: e.g. W-11261, W-10001, W-12974
+  const workMatch = q.match(/\b(W-\d{4,6})\b/i);
   const workId = workMatch ? workMatch[1].toUpperCase() : null;
 
   if (workId) {
@@ -201,7 +201,7 @@ export async function fetchContext(intent, api = null) {
           pageSize: 1,
         });
         const topWorkItem = riskRes?.rows?.[0];
-        const topId = topWorkItem?.id || 'TND-2026-01842';
+        const topId = topWorkItem?.id || 'W-11261';
         const work = await apis.getWorkDetail(topId);
         return { intent, work };
       }
@@ -859,28 +859,28 @@ export async function investigateHighestRisk(api = null) {
 }
 
 /**
- * Quick-Action Prompts (ProcureGuard Intelligence Queries)
+ * Quick-Action Prompts (All 6 exact requirements + useful prompts)
  */
 export const SUGGESTED_PROMPTS = [
   {
-    label: 'Why is TND-2026-01842 high risk?',
-    text: 'Why is TND-2026-01842 high risk?',
-    description: 'Inspect analytical dossier for top critical tender',
+    label: 'Why is W-11261 high risk?',
+    text: 'Why is W-11261 high risk?',
+    description: 'Inspect analytical dossier for top critical project',
   },
   {
-    label: 'Show me the critical tenders',
+    label: 'Show me the critical works',
     text: 'Show me the critical works',
-    description: 'List all tenders in CRITICAL tier (Score 80–100)',
+    description: 'List all works in CRITICAL tier (Score 80–100)',
   },
   {
     label: 'Which states need attention?',
     text: 'Which states have the most high-risk works?',
-    description: 'State-wise procurement risk concentration ranking',
+    description: 'State-wise risk concentration ranking',
   },
   {
-    label: 'Find potential duplicate bids',
+    label: 'Find potential duplicate works',
     text: 'Show me potential duplicate works.',
-    description: 'High-similarity tenders screened across sectors',
+    description: 'High-similarity candidates screened across sectors',
   },
   {
     label: 'What should investigators review first?',
@@ -888,8 +888,8 @@ export const SUGGESTED_PROMPTS = [
     description: 'Prioritized inspection protocol & actionable checklist',
   },
   {
-    label: 'Explain highest-risk tender',
+    label: 'Explain highest-risk work',
     text: 'Explain the highest-risk project.',
-    description: 'Deep dive into highest composite risk tender',
+    description: 'Deep dive into highest composite risk work',
   },
 ];
