@@ -30,8 +30,12 @@ export const AuthProvider = ({ children }) => {
             logout();
           }
         })
-        .catch(() => {
-          logout();
+        .catch((err) => {
+          if (err?.response?.status === 401) {
+            logout();
+          } else {
+            console.warn('[MPLADS Sentinel] Unable to refresh user session from backend:', err?.message || err);
+          }
         })
         .finally(() => setLoading(false));
     } else {

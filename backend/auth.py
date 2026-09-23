@@ -10,12 +10,22 @@ import json
 import base64
 import hashlib
 import time
+import logging
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-SECRET_KEY = os.environ.get("SENTINEL_AUTH_SECRET", "mplads-sentinel-sih-demo-key-2026-secure-token")
+logger = logging.getLogger("sentinel.auth")
+
+# Secret key precedence: SENTINEL_AUTH_SECRET -> JWT_SECRET -> AUTH_SECRET -> SECRET_KEY
+SECRET_KEY = (
+    os.environ.get("SENTINEL_AUTH_SECRET")
+    or os.environ.get("JWT_SECRET")
+    or os.environ.get("AUTH_SECRET")
+    or os.environ.get("SECRET_KEY")
+    or "mplads-sentinel-sih-demo-key-2026-secure-token"
+)
 TOKEN_EXPIRY_SECONDS = 86400 * 7  # 7 days
 
 security = HTTPBearer(auto_error=False)
@@ -177,11 +187,21 @@ DEMO_USERS: Dict[str, Dict[str, Any]] = {
 
 def authenticate_user(username: str, password: str) -> Optional[User]:
     """Verify credentials and return user object if valid."""
-    user_entry = DEMO_USERS.get(username.strip().lower())
+    cleaned_username = username.strip().lower()
+    logger.info("Authentication attempt received for username: %s", cleaned_username)
+    user_entry = DEMO_USERS.get(cleaned_username)
     if not user_entry:
+        logger.warning("Authentication failed: User '%s' not found in registry", cleaned_username)
         return None
     if not verify_password(password, user_entry["password_hash"]):
+        logger.warning("Authentication failed: Invalid credentials for user '%s'", cleaned_username)
         return None
+    logger.info(
+        "Authentication successful for user: %s (role: %s, scope: %s)",
+        cleaned_username,
+        user_entry["user"].role,
+        user_entry["user"].scope,
+    )
     return user_entry["user"]
 
 
