@@ -5,11 +5,25 @@ import axios from 'axios';
 import * as mockData from '../data/mockData';
 import { tierForScore } from '../data/constants';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000/api';
+export function resolveApiBaseUrl(env = (typeof process !== 'undefined' ? process.env : {})) {
+  const raw =
+    env.REACT_APP_API_BASE_URL ||
+    env.REACT_APP_BACKEND_URL ||
+    env.REACT_APP_API_URL ||
+    'http://127.0.0.1:8000/api';
+
+  let clean = raw.trim().replace(/\/+$/, '');
+  if (!clean.endsWith('/api')) {
+    clean = `${clean}/api`;
+  }
+  return clean;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 35000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -345,10 +359,36 @@ export async function login(username, password) {
     const res = await apiClient.post('/auth/login', { username, password });
     return res.data;
   } catch (err) {
-    if (err.response?.data?.detail) {
-      throw new Error(err.response.data.detail);
+    if (err.response) {
+      const status = err.response.status;
+      const detail = err.response.data?.detail;
+
+      if (status === 401) {
+        throw new Error(typeof detail === 'string' ? detail : 'Invalid username or password.');
+      }
+      if (status === 403) {
+        throw new Error('You are not authorized to access this account or scope.');
+      }
+      if (status === 404) {
+        throw new Error('Authentication service endpoint was not found. Please check the backend configuration.');
+      }
+      if (status === 422) {
+        throw new Error('The login request was invalid. Please try again.');
+      }
+      if (status === 500) {
+        throw new Error('The authentication service encountered a server error. Please try again.');
+      }
+      if (status === 502 || status === 503 || status === 504) {
+        throw new Error('The backend is temporarily unavailable. Please try again in a moment.');
+      }
+      throw new Error(typeof detail === 'string' ? detail : `Authentication request failed with status ${status}.`);
     }
-    throw new Error('Authentication failed. Please verify credentials.');
+
+    if (err.code === 'ECONNABORTED' || err.message?.toLowerCase().includes('timeout')) {
+      throw new Error('The backend is taking longer than expected to respond. Please try again shortly.');
+    }
+
+    throw new Error('Unable to reach the authentication service. Please check the deployment configuration or try again.');
   }
 }
 
@@ -357,7 +397,11 @@ export async function getCurrentUser() {
     const res = await apiClient.get('/auth/me');
     return res.data;
   } catch (err) {
-    return null;
+    if (err.response?.status === 401) {
+      return null;
+    }
+    // For network errors or server downtime, throw so caller can distinguish from 401 session expiration
+    throw err;
   }
 }
 

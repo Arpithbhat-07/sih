@@ -45,9 +45,36 @@ app = FastAPI(
     version="1.0.0",
 )
 
+import logging
+
+logger = logging.getLogger("sentinel.server")
+
+
+def resolve_cors_origins() -> list[str]:
+    """
+    Aggregate and normalize allowed origins from environment variables and defaults.
+    Ensures trailing slashes are removed and protocols are preserved.
+    """
+    origins: set[str] = {
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    }
+    for env_var in ["CORS_ORIGINS", "FRONTEND_URL", "ALLOWED_ORIGINS"]:
+        raw_val = os.environ.get(env_var, "")
+        if raw_val:
+            for item in raw_val.split(","):
+                cleaned = item.strip().rstrip("/")
+                if cleaned:
+                    origins.add(cleaned)
+                    if not cleaned.startswith("http://") and not cleaned.startswith("https://"):
+                        origins.add(f"https://{cleaned}")
+    return sorted(list(origins))
+
+
 # CORS configuration
-cors_origins_env = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
-allowed_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+allowed_origins = resolve_cors_origins()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -56,6 +83,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+def app_root():
+    """Root health and status endpoint for Render and infrastructure monitors."""
+    return {
+        "status": "ok",
+        "service": "MPLADS Sentinel API",
+        "version": "1.0.0",
+    }
+
+
+@app.get("/health")
+def app_health_check():
+    """Standard health endpoint for platform monitoring."""
+    return {
+        "status": "ok",
+        "service": "MPLADS Sentinel API",
+    }
 
 # Initialize analytical engine with synthetic dataset
 analytics_service = AnalyticsService(str(DATA_PATH) if DATA_PATH.exists() else None)
@@ -97,6 +143,7 @@ def login(req: LoginRequest):
             detail="Invalid username or password. Please verify your credentials.",
         )
     token = create_access_token({"sub": user.username, "role": user.role, "scope": user.scope})
+    logger.info("Session token issued for user: %s", user.username)
     return LoginResponse(token=token, user=user)
 
 
