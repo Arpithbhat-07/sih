@@ -5,18 +5,37 @@ import axios from 'axios';
 import * as mockData from '../data/mockData';
 import { tierForScore } from '../data/constants';
 
-export function resolveApiBaseUrl(env = (typeof process !== 'undefined' ? process.env : {})) {
-  const raw =
-    env.REACT_APP_API_BASE_URL ||
-    env.REACT_APP_BACKEND_URL ||
-    env.REACT_APP_API_URL ||
-    'http://127.0.0.1:8000/api';
-
-  let clean = raw.trim().replace(/\/+$/, '');
-  if (!clean.endsWith('/api')) {
-    clean = `${clean}/api`;
+export function resolveApiBaseUrl(customEnv) {
+  // 1. Custom environment (for unit tests and programmatic overrides)
+  if (customEnv && (customEnv.REACT_APP_API_BASE_URL || customEnv.REACT_APP_BACKEND_URL || customEnv.REACT_APP_API_URL)) {
+    const raw = customEnv.REACT_APP_API_BASE_URL || customEnv.REACT_APP_BACKEND_URL || customEnv.REACT_APP_API_URL;
+    let clean = String(raw).trim().replace(/\/+$/, '');
+    return clean.endsWith('/api') ? clean : `${clean}/api`;
   }
-  return clean;
+
+  // 2. Direct Webpack compile-time inlined environment variables
+  const envUrl =
+    process.env.REACT_APP_API_BASE_URL ||
+    process.env.REACT_APP_BACKEND_URL ||
+    process.env.REACT_APP_API_URL;
+
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
+    let clean = envUrl.trim().replace(/\/+$/, '');
+    return clean.endsWith('/api') ? clean : `${clean}/api`;
+  }
+
+  // 3. Runtime browser domain detection (fail-safe for production Vercel / custom domains)
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname || '';
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname.endsWith('.local');
+    if (!isLocalhost && hostname.length > 0) {
+      // Deployed to production (e.g. missionx.arpith.in, missionx-jade.vercel.app): target live Render backend
+      return 'https://sih-63wt.onrender.com/api';
+    }
+  }
+
+  // 4. Default for local development
+  return 'http://127.0.0.1:8000/api';
 }
 
 const API_BASE_URL = resolveApiBaseUrl();

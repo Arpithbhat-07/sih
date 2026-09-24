@@ -60,6 +60,8 @@ def resolve_cors_origins() -> list[str]:
         "http://127.0.0.1:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "https://missionx.arpith.in",
+        "https://missionx-jade.vercel.app",
     }
     for env_var in ["CORS_ORIGINS", "FRONTEND_URL", "ALLOWED_ORIGINS"]:
         raw_val = os.environ.get(env_var, "")

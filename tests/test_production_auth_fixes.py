@@ -68,17 +68,18 @@ def test_login_missing_fields_returns_422():
 
 def test_cors_preflight_vercel_origin():
     """Verify that preflight OPTIONS from a Vercel domain receives correct CORS headers."""
-    res = client.options(
-        "/api/auth/login",
-        headers={
-            "Origin": "https://mplads-sentinel.vercel.app",
-            "Access-Control-Request-Method": "POST",
-            "Access-Control-Request-Headers": "content-type,authorization",
-        },
-    )
-    assert res.status_code == 200
-    assert res.headers.get("access-control-allow-origin") == "https://mplads-sentinel.vercel.app"
-    assert res.headers.get("access-control-allow-credentials") == "true"
+    for origin in ["https://missionx.arpith.in", "https://missionx-jade.vercel.app", "https://mplads-sentinel.vercel.app"]:
+        res = client.options(
+            "/api/auth/login",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type,authorization",
+            },
+        )
+        assert res.status_code == 200, f"Preflight failed for {origin}"
+        assert res.headers.get("access-control-allow-origin") == origin, f"Wrong allow-origin for {origin}"
+        assert res.headers.get("access-control-allow-credentials") == "true"
 
 
 def test_cors_preflight_localhost_origin():
